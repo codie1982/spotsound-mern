@@ -5,7 +5,7 @@ const colors = require("colors")
 const {connectDB} = require("./config/db.js")
 const cors = require('cors'); 
 
-const usersRoutes = require("./routes/users/users")
+const usersRoutes = require("./routes/userRoutes.js")
 const {errorHandler} = require("./middelware/errorHandler")
 const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 3000;
@@ -15,7 +15,7 @@ app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use("/users",usersRoutes)
+app.use("/api/users",usersRoutes)
 
 
 if(process.env.NODE_ENV ==="production"){
