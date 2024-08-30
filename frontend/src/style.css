@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  outline: none;
+  border: none;
+  text-transform: none;
+  font-family: "Lexend", system-ui;
+  transition: 0.2 ease;
+}
+:root{
+  --main-color:#66CBFF;
+  --white-color:#ffffff;
+  --black-color:#1a1a1a;
+  --black-color-10:rgba(0, 0, 0, 0.1);
+  --main-bg-color: #93AEC1;
+  --main-bg-color-light : #9DBDBA;
+  --main-text-active-color : #EC6A52;
+  --google-button-color:#366bc2;
+  --text-color : #CFCFCF;
+  --text-color-dark : #454545;
+  --border : 0.1rem solid rgba(255,255,255,0)
+}
+html{
+  overflow-x: hidden;
+  scroll-padding-top: 9rem ;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-optical-sizing: auto;
+  font-style: normal;
+  margin: 0;
+
+}
+h1,h2,h3,h4,h5,
+.h1,.h2,.h3,.h4,.h5{
+font-weight: 600;
+}
+
+.section{
+width: 100%;
+margin-left: 0px;
+margin-right: 0;
+padding: 0px;
+}
+.hero {
+  position: relative;
+  height: 100vh;
+  background-image: url("../src/assets/images/background.png");
+  background-size :cover;
+  background-repeat:   no-repeat;
+}
+
+.navbar{
+  border-bottom: 1px solid var(--black-color-10);
+  background-color: var(--main-bg-color);
+}
+.navbar .navbar-brand{
+height: 50xp
+}
+nav .nav-link {
+font-size: 1rem;
+font-style: normal;
+font-weight: 300;
+text-transform: uppercase;
+letter-spacing: 1px;
+color: var(--text-color-dark) ;
+}
+.active{
+  color: var(--main-text-active-color) !important;
+}
+.text-section{
+  width: 100%;
+}
+  .container{
+    display: flex;
+}
+#hero{
+  background : linear-gradient(var(--black-color-10),var(--black-color-10)),url("../src/assets/images/background.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.icon_section{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.icon_section span{
+color: var(--text-color);
+font-size: 12px;
+text-transform: capitalize;
+
+}
+.icon_box{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 150px;
+  height: 150px;
+  border:2px solid var(--main-text-active-color);
+  border-radius: 100px;
+  background-color: var(--main-bg-color);
+  margin-top: 30px;
+} 
+
+.icon_image{
+  width: 100px;
+  height: 100px;
+}
+.logo_section{
+display: flex;
+justify-content: center;
+align-items: center;
+margin: auto;
+height: 100%;
+}
+.text-section{
+  margin-top: 1rem;
+}
+.sub-title{
+font-size: 24px;
+font-weight: 200;
+text-transform: lowercase;
+text-align: start;
+margin-left: 90px;
+}
+.main-title{
+  font-size: 40px;
+  font-weight: 900;
+  text-align: start;
+  margin-left: 90px;
+}
+.main-description{
+  text-align: justify;
+}
+.btn-google{
+  display: flex; /* Flexbox kullanımı */
+  align-items: center; /* Dikeyde ortalar */
+  justify-content: center; /* Yatayda ortalar */
+  padding: 10px; /* Butona biraz iç boşluk ekler */
+  border: none; /* Butonun kenarlıklarını kaldırır */
+  background-color: var(--google-button-color); /* Google mavi rengi */
+  color: var(--white-color); /* Yazı rengini beyaz yapar */
+  cursor: pointer; /* İmleci el işaretine dönüştürür */
+}
+.btn-google-icon{
+width: 30px;
+height: 30px;
+margin-right: 10px;
+}
+.btn-google-text{
+  text-align: center;
+  margin: auto;
+}
