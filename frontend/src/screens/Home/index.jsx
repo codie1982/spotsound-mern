@@ -1,24 +1,101 @@
-import React,{useState} from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from "react-redux"
+import { register, registerWithGoogle, reset } from "../../features/auth/authSlice"
+import {
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+  useLocation,
+  Navigate,
+  Outlet,
+  useSearchParams,
+} from "react-router-dom";
+import Spinner from '../../components/Spinner'
 import { Container, Row, Col, Button } from 'react-bootstrap'
+import { toast } from 'react-toastify'
 import brand from "../../assets/images/brand.png"
 import xLogo from "../../assets/images/X_icon.png"
+
 import intagramLogo from "../../assets/images/instagram_icon.png"
 import facebookLogo from "../../assets/images/facebook_icon.png"
 import downloadIcon from "../../assets/images/download_icon.png"
 import uploadIcon from "../../assets/images/upload_icon.png"
 import noInternetIcon from "../../assets/images/nointernet_icon.png"
 import googleIcon from "../../assets/images/Google__G__logo.png"
-
-import { GoogleOAuthProvider,GoogleLogin,useGoogleLogin } from '@react-oauth/google';
-
 import logo from "../../assets/images/logo.png"
 export default function HOME() {
-  /* const login = useGoogleLogin({
-    onSuccess: tokenResponse => console.log(tokenResponse),
-  });  */
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    password2: '',
+  })
+  const [first, setFirst] = useState("")
+  useEffect(() => {
+    dispatch(reset())
+  }, [])
 
+  const login = () => {
+    dispatch(registerWithGoogle())
+  };
+
+  const { name, email, password, password2 } = formData
+
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+
+  const { user, googleurl, isLoading, isError, isSuccess, message } = useSelector(
+    (state) => {
+      console.log("state.auth",state.auth)
+      return state.auth
+    }
+  )
+
+
+
+  useEffect(() => {
+    if (isError) {
+      toast.error(message)
+    }
+
+    if (isSuccess || user) {
+      navigate('/')
+    }
+    if(googleurl){
+      window.location.replace(googleurl.url)
+    }
+    dispatch(reset())
+  }, [user, googleurl, isError, isSuccess, message, navigate, dispatch])
+
+
+  const onChange = (e) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [e.target.name]: e.target.value,
+    }))
+  }
+  const onSubmit = (e) => {
+    e.preventDefault()
+
+    if (password !== password2) {
+      toast.error('password do not match')
+    } else {
+      const userData = {
+        name,
+        email,
+        password,
+      }
+
+      dispatch(register(userData))
+    }
+  }
+  if (isLoading) {
+    return <Spinner />
+  }
   return (
- <div data-bs-spy="scroll" data-bs-target="#navbar-example">
+    <div data-bs-spy="scroll" data-bs-target="#navbar-example">
       <Container className="section" fluid>
         <nav className="navbar navbar-expand-lg">
           <div className="container">
@@ -46,12 +123,12 @@ export default function HOME() {
                   <Col md="7">
                     <Row>
                       <Col md="3">
-                      <div className="logo_section">
-                      <img src={logo} />
-                      </div>
-                  
+                        <div className="logo_section">
+                          <img src={logo} />
+                        </div>
+
                       </Col>
-                      <Col  md="9">
+                      <Col md="9">
                         <div className="text-section">
                           <h2 className="sub-title text-white display-1">Listen Offline Anytime, Anywhere</h2>
                           <h1 className="main-title text-uppercase text-white display-1">Upload, Play, and Enjoy Your Music Offline with SpotSound</h1>
@@ -67,22 +144,62 @@ export default function HOME() {
 
                     <Row>
                       <Col md="6">
-                      <GoogleOAuthProvider clientId="621103493987-9g9m1jl5sagdl8hid6hqm35ppc3q3qcl.apps.googleusercontent.com">
-                      <GoogleLogin
-                          onSuccess={credentialResponse => {
-                            console.log(credentialResponse);
-                          }}
-                          onError={() => {
-                            console.log('Login Failed');
-                          }}
-                        />
-                        {/* <Button  onClick={() => login()} className="btn-google">
+                       {/*  <form onSubmit={onSubmit}>
+                          <div className='form-group'>
+                            <input
+                              type='text'
+                              className='form-control'
+                              id='name'
+                              name='name'
+                              value={name}
+                              placeholder='Enter your name'
+                              onChange={onChange}
+                            />
+                          </div>
+                          <div className='form-group'>
+                            <input
+                              type='email'
+                              className='form-control'
+                              id='email'
+                              name='email'
+                              value={email}
+                              placeholder='Enter your email'
+                              onChange={onChange}
+                            />
+                          </div>
+                          <div className='form-group'>
+                            <input
+                              type='password'
+                              className='form-control'
+                              id='password'
+                              name='password'
+                              value={password}
+                              placeholder='Enter password'
+                              onChange={onChange}
+                            />
+                          </div>
+                          <div className='form-group'>
+                            <input
+                              type='password'
+                              className='form-control'
+                              id='password2'
+                              name='password2'
+                              value={password2}
+                              placeholder='Confirm password'
+                              onChange={onChange}
+                            />
+                          </div>
+                          <div className='form-group'>
+                            <button type='submit' className='btn'>
+                              Submit
+                            </button>
+                          </div>
+                        </form> */}
+                        <Button onClick={() => login()} className="btn-google">
                           <img src={googleIcon} className="btn-google-icon" />
                           <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
-                        </Button> */}
-                      </GoogleOAuthProvider>
-                      
-                          </Col>
+                        </Button>
+                      </Col>
                       <Col md="1"><a href="#" target="_blank"><img src={xLogo} /></a></Col>
                       <Col md="1"><a href="#" target="_blank"><img src={intagramLogo} /></a></Col>
                       <Col md="1"><a href="#" target="_blank"><img src={facebookLogo} /></a></Col>
@@ -100,7 +217,6 @@ export default function HOME() {
                               </div>
                             </Col>
                           </Row>
-
                         </div>
                       </Col>
                       <Col >
@@ -128,7 +244,6 @@ export default function HOME() {
                               </div>
                             </Col>
                           </Row>
-
                         </div>
                       </Col>
                     </Row>
@@ -141,6 +256,6 @@ export default function HOME() {
       </Container>
     </div>
 
-   
+
   )
 }
