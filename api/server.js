@@ -23,7 +23,7 @@ app.use(session({
     resave: false,  // Oturum verisi değişmediği sürece oturumu yeniden kaydetme
     saveUninitialized: false,  // Boş oturumları kaydetme
     store: MongoStore.create({
-        mongoUrl: 'mongodb://localhost:27017/myDatabase', // MongoDB bağlantı URL'si
+        mongoUrl: process.env.MONGO_URI, // MongoDB bağlantı URL'si
         collectionName: 'sessions',  // Oturum verilerinin saklanacağı koleksiyon adı
         ttl: 14 * 24 * 60 * 60  // Oturumun sona erme süresi (14 gün)
     }),
