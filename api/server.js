@@ -4,7 +4,7 @@ const express = require("express")
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const colors = require("colors")
-const {connectDB,connectSessionDB} = require("./config/db.js")
+const {connectDB} = require("./config/db.js")
 const cors = require('cors'); 
 
 const usersRoutes = require("./routes/userRoutes.js")
@@ -24,8 +24,8 @@ app.use(session({
     saveUninitialized: true,  // Boş oturumları kaydetme
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI, // MongoDB bağlantı URL'si
-        dbName:"connection",
-        collectionName: 'sessions',  // Oturum verilerinin saklanacağı koleksiyon adı
+        dbName:process.env.DB_SPOTSOUND,
+        collectionName: process.env.SESSION_COLLECTION,  // Oturum verilerinin saklanacağı koleksiyon adı
         ttl: 14 * 24 * 60 * 60  // Oturumun sona erme süresi (14 gün)
     }),
     cookie: {

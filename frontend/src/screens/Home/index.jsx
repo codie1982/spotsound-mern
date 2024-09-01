@@ -16,7 +16,6 @@ import { Container, Row, Col, Button } from 'react-bootstrap'
 import { toast } from 'react-toastify'
 import brand from "../../assets/images/brand.png"
 import xLogo from "../../assets/images/X_icon.png"
-
 import intagramLogo from "../../assets/images/instagram_icon.png"
 import facebookLogo from "../../assets/images/facebook_icon.png"
 import downloadIcon from "../../assets/images/download_icon.png"
@@ -25,7 +24,9 @@ import noInternetIcon from "../../assets/images/nointernet_icon.png"
 import googleIcon from "../../assets/images/Google__G__logo.png"
 import logo from "../../assets/images/logo.png"
 import ReactGA from "react-ga4";
+import { useCookies } from 'react-cookie';
 export default function HOME() {
+  const [cookies, setCookie] = useCookies(['name']);
   ReactGA.send({ hitType: "pageview", page: "/", title: "Home Page" });
   const [formData, setFormData] = useState({
     name: '',
@@ -35,6 +36,9 @@ export default function HOME() {
   })
   const [first, setFirst] = useState("")
   useEffect(() => {
+
+    console.log("cookies",cookies)
+
     dispatch(reset())
   }, [])
 
@@ -43,11 +47,8 @@ export default function HOME() {
   };
 
   const { name, email, password, password2 } = formData
-
   const navigate = useNavigate()
   const dispatch = useDispatch()
-
-
   const { user, googleurl, isLoading, isError, isSuccess, message } = useSelector(
     (state) => {
       console.log("state.auth",state.auth)

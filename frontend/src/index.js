@@ -7,13 +7,18 @@ import './style.css';
 import { store } from './app/store';
 import { Provider } from 'react-redux';
 import ReactGA from "react-ga4";
+
+import { CookiesProvider } from 'react-cookie';
+
 ReactGA.initialize("G-6N1Q7S5NLP");
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <RouterProvider router={routes} />
-    </Provider>
+    <CookiesProvider  defaultSetOptions={{ path: '/' }}>
+      <Provider store={store}>
+        <RouterProvider router={routes} />
+      </Provider>
+    </CookiesProvider>
   </React.StrictMode>
 );
 
