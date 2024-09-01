@@ -6,6 +6,8 @@ import routes from "./router"
 import './style.css';
 import { store } from './app/store';
 import { Provider } from 'react-redux';
+import ReactGA from "react-ga4";
+ReactGA.initialize("G-6N1Q7S5NLP");
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

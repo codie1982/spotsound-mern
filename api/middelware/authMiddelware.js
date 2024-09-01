@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken")
 const asyncHandler = require("express-async-handler")
 const User = require("../models/userModel");
+const SessionModel = require("../models/sessionModel");
 
 
 const protect = asyncHandler(async (req,res,next)=>{
@@ -24,5 +25,27 @@ if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
         throw new Error("not authorized")
     }
 })
-
-module.exports = { protect }
+// Oturum kontrolü middleware'i
+async function isSessionActive(req, res, next) {
+    console.log("isSessionActive",req.session)
+    if(req.session.user){
+        return next();
+    }else{
+        res.redirect('/');  // Giriş sayfasına yönlendir
+    }
+}
+// Oturum kontrolü middleware'i
+async function isAuthenticated(req, res, next) {
+    const nSessionModel = await SessionModel.findOne({ userId: req.user.id });
+    if(nSessionModel){
+        const nw = new Date(Date.now());
+        const ex = new Date(nSessionModel.expiresAt)
+        if(nw>=ex){
+            res.redirect('/');  // Giriş sayfasına yönlendir
+        }
+        return next();
+    }else{
+        res.redirect('/');  // Giriş sayfasına yönlendir
+    }
+}
+module.exports = { protect,isAuthenticated,isSessionActive }

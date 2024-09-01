@@ -14,8 +14,20 @@ const registerWithGoogle = async () => {
     }
     return response.data
 }
-const authService = {
-    register,registerWithGoogle
+const me = async (token) => {
+    const config = {
+        headers: { Authorization: `Bearer ${token}` }
+    };
+    
+    const bodyParameters = {};
+    const response = await axios.post(API_URL + "me",
+        bodyParameters,
+        config
+    );
 
+    return response.data
+}
+const authService = {
+    register,registerWithGoogle,me
   }
 export default authService

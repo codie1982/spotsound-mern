@@ -24,7 +24,9 @@ import uploadIcon from "../../assets/images/upload_icon.png"
 import noInternetIcon from "../../assets/images/nointernet_icon.png"
 import googleIcon from "../../assets/images/Google__G__logo.png"
 import logo from "../../assets/images/logo.png"
+import ReactGA from "react-ga4";
 export default function HOME() {
+  ReactGA.send({ hitType: "pageview", page: "/", title: "Home Page" });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -87,7 +89,6 @@ export default function HOME() {
         email,
         password,
       }
-
       dispatch(register(userData))
     }
   }
@@ -143,7 +144,7 @@ export default function HOME() {
                     </Row>
 
                     <Row>
-                      <Col md="6">
+                      <Col xs="12" md="6">
                        {/*  <form onSubmit={onSubmit}>
                           <div className='form-group'>
                             <input
@@ -195,14 +196,14 @@ export default function HOME() {
                             </button>
                           </div>
                         </form> */}
-                        <Button onClick={() => login()} className="btn-google">
+                        <Button  onClick={() => login()} className="btn-google">
                           <img src={googleIcon} className="btn-google-icon" />
                           <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
                         </Button>
                       </Col>
-                      <Col md="1"><a href="#" target="_blank"><img src={xLogo} /></a></Col>
-                      <Col md="1"><a href="#" target="_blank"><img src={intagramLogo} /></a></Col>
-                      <Col md="1"><a href="#" target="_blank"><img src={facebookLogo} /></a></Col>
+                      <Col xs="4" md="2"><a href="https://twitter.com/SpotSoundMusic" target="_blank"><img src={xLogo} /></a></Col>
+                      <Col xs="4" md="2"><a href="https://www.instagram.com/spotsoundoffical/" target="_blank"><img src={intagramLogo} /></a></Col>
+                      <Col xs="4" md="2"><a href="https://www.facebook.com/profile.php?id=61564695863328&locale=tr_TR" target="_blank"><img src={facebookLogo} /></a></Col>
                     </Row>
                     <Row className="mt-5">
                       <Col >

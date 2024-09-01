@@ -45,6 +45,23 @@ export const registerWithGoogle = createAsyncThunk(
     }
   }
 )
+// get User information
+export const getMe = createAsyncThunk(
+  'auth/me',
+  async (token, thunkAPI) => {
+    try {
+      return await authService.me(token)
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString()
+      return thunkAPI.rejectWithValue(message)
+    }
+  }
+)
 export const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -65,14 +82,14 @@ export const authSlice = createSlice({
         state.isLoading = false
         state.isSuccess = true
         state.isError = false
-        state.googleurl = action.payload
+        state.user = action.payload
       })
       .addCase(register.rejected,(state,action)=>{
         state.isLoading = false
         state.isSuccess = false
         state.isError = true
         state.message = action.payload
-        state.googleurl = null
+        state.user = null
       })
       .addCase(registerWithGoogle.fulfilled,(state,action)=>{
         state.isLoading = false
@@ -80,8 +97,19 @@ export const authSlice = createSlice({
         state.isError = false
         state.googleurl = action.payload
       })
+      .addCase(getMe.pending, (state) => {
+        state.isLoading = true
+      })
+      .addCase(getMe.fulfilled,(state,action)=>{
+        state.isLoading = false
+        state.isSuccess = true
+        state.isError = false
+        state.user = action.payload
+      })
+
   }
 })
+
 
 export const { reset } = authSlice.actions
 export default authSlice.reducer

@@ -1,16 +1,18 @@
 const asyncHandler = require("express-async-handler")
 const bcrypt = require("bcryptjs")
+const SessionModel = require("../models/sessionModel");
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
-const {OAuth2Client} = require("google-auth-library");
-const getUserDataFromGoogle = require("./googleController")
+const { OAuth2Client } = require("google-auth-library");
+const getUserDataFromGoogle = require("./googleController");
+const { Mongoose } = require("mongoose");
 //access private
-
 const getMe = asyncHandler(async (req, res) => {
-    const {_id,name,email} = await User.findById(req.user.id)
+    const { _id, name, email, profileImage } = await User.findById(req.user.id)
+    console.log("_id,name,email,profileImage", _id, name, email, profileImage)
     try {
         res.status(200).json({
-            id:_id,name,email
+            id: _id, name, email, image: profileImage.path
         });
     } catch (error) {
         console.error('Error reading data:', error);
@@ -19,6 +21,7 @@ const getMe = asyncHandler(async (req, res) => {
 
 //access public
 const registerUser = asyncHandler(async (req, res) => {
+
     const { name, email, password } = req.body
 
     if (!name || !email || !password) {
@@ -48,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
             _id: nUser._id,
             name: nUser.name,
             email: nUser.email,
-            token:generateToken(user._id)
+            token: generateToken(user._id)
         })
     } else {
         res.status(400)
@@ -59,29 +62,31 @@ const registerUser = asyncHandler(async (req, res) => {
 const registerWithGoogle = asyncHandler(async (req, res) => {
     res.header("Access-Control-Allow-Origin", 'http://localhost:3000');
     res.header("Access-Control-Allow-Credentials", 'true');
-    res.header("Referrer-Policy","no-referrer-when-downgrade");
+    res.header("Referrer-Policy", "no-referrer-when-downgrade");
 
     const redirectUrl = "http://127.0.0.1:5001/api/users/oauth"
-    const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID,process.env.CLIENT_SECRET,redirectUrl)
+    const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID, process.env.CLIENT_SECRET, redirectUrl)
     const authorieUrl = oAuth2Client.generateAuthUrl({
-        access_type:"offline",
-        scope:"https://www.googleapis.com/auth/userinfo.profile email openid ",
-        prompt:"consent"
+        access_type: "offline",
+        scope: "https://www.googleapis.com/auth/userinfo.profile email openid ",
+        prompt: "consent"
     })
     res.status(200).json({
-        url:authorieUrl
+        url: authorieUrl
     })
 })
 
 const googleOAuth = asyncHandler(async (req, res) => {
+    var selectedUserid, selectedUsername, selectedUseremail = "";
     const code = req.query.code
     try {
         const redirectUrl = "http://127.0.0.1:5001/api/users/oauth"
-        const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID,process.env.CLIENT_SECRET,redirectUrl)
+        const oAuth2Client = new OAuth2Client(process.env.CLIENT_ID, process.env.CLIENT_SECRET, redirectUrl)
         const ut = await oAuth2Client.getToken(code)
         await oAuth2Client.setCredentials(ut.tokens)
         const user = oAuth2Client.credentials
-        const userData = await getUserDataFromGoogle(user.access_token)
+        const userGoogleData = await getUserDataFromGoogle(user.access_token)
+        const { sub, name, given_name, family_name, picture, email, email_verified } = userGoogleData;
         /**
          * {
             sub: '105113479171269382757',
@@ -93,39 +98,79 @@ const googleOAuth = asyncHandler(async (req, res) => {
             email_verified: true
             }
          */
-
-        const{sub,name,given_name,family_name,picture,email,email_verified} = userData;
         //checkUsers    
         const userExist = await User.findOne({ email })
-        if(!userExist){
-            const doc = new User();
-            doc.name = name
-            doc.firstname = given_name;
-            doc.lastname = family_name;
-            doc.email = email
-            doc.email_verify = email_verified
-            doc.profileImage.type = "external" 
-            doc.profileImage.path = picture 
-            doc.appType="web"
-            doc.authProvider="google"
-            doc.authProviderID=sub
-            const nUser = await doc.save(doc)
-            if (nUser) {
-                res.status(201)
-                res.redirect('http://localhost:3000/profile');
-            } else {
+        if (!userExist) {
+            const nUser = await saveUserByGoogle(sub, name, given_name, family_name, picture, email, email_verified)
+            if (!nUser) {
                 res.status(400)
                 throw new Error("InValied User data")
             }
-        }else{
-            res.redirect("http://localhost:3000/profile");
+            selectedUserid = nUser['id']
+            selectedUsername = nUser["name"]
+            selectedUseremail = nUser["email"]
+        } else {
+            selectedUserid = userExist['_id']
+            selectedUsername = userExist["name"]
+            selectedUseremail = userExist["email"]
         }
-    } catch (error) {
-        console.log("error",error)
-    }
- 
+        
+        //Kullanıcı Oturumu Açma
+        // Cihaz bilgilerini al
 
+          const device = req.headers['user-agent']; // Kullanıcı ajanı (tarayıcı bilgisi)
+          const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress; // Kullanıcının IP adresi
+       
+          
+
+          const nSessionModelession = await SessionModel.findOne({ sessionToken:req.sessionID })
+          if(!nSessionModelession){
+            const docSession = new SessionModel()
+            docSession.sessionToken = req.sessionID
+            docSession.ipAddress = ip
+            docSession.userId = selectedUserid;
+            docSession.userAgent = device
+            docSession.deviceType = "desktop"
+            docSession.appType = "web"
+            docSession.expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+            const nSession = await docSession.save();
+            const userToken = generateToken(selectedUserid)
+            if(nSession){
+              req.session.user={name:selectedUsername,token:userToken}
+              console.log("Session Kayıt Edildi")
+              res.redirect(`http://127.0.0.1:3000/oauth`);
+            }else{
+                res.redirect('http://localhost:3000/404');
+            }
+          }
+        
+    } catch (error) {
+        console.log("error", error)
+    }
 })
+
+const saveUserByGoogle = async (sub, name, given_name, family_name, picture, email, email_verified)=>{
+    const doc = new User();
+    doc.name = name
+    doc.firstname = given_name;
+    doc.lastname = family_name;
+    doc.email = email
+    doc.email_verify = email_verified
+    doc.profileImage.type = "external"
+    doc.profileImage.path = picture
+    doc.appType = "web"
+    doc.authProvider = "google"
+    doc.authProviderID = sub
+    const nUser = await doc.save(doc)
+    return {
+        id: nUser['_id'],
+        name:nUser.name,
+        email:nUser.email
+    }
+}
+
+
+
 //access public
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -140,9 +185,9 @@ const loginUser = asyncHandler(async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                token:generateToken(user._id)
+                token: generateToken(user._id)
             });
-        }else{
+        } else {
             res.status(400)
             throw new Error("inValide credental")
         }
@@ -153,11 +198,11 @@ const loginUser = asyncHandler(async (req, res) => {
 
 
 //Generete Token
-const generateToken =(id)=>{
-return jwt.sign({id},process.env.JWT_SECRET,{
-    expiresIn:'30d'
-})
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: '30d'
+    })
 }
 module.exports = {
-    getMe, loginUser, registerUser,registerWithGoogle,googleOAuth
+    getMe, loginUser, registerUser, registerWithGoogle, googleOAuth
 }

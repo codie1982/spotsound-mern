@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import Home from "../screens/Home"
 import { MainLayout } from "../layouts/Main";
 import Profile from "../screens/Profile";
+import OAuth from "../screens/OAuth";
 const routes =  createBrowserRouter([
     {
         path:"/",
@@ -11,6 +12,10 @@ const routes =  createBrowserRouter([
             {
                 index:true,
                 element:<Home/>
+            },
+            {
+                path:"oauth",
+                element:<OAuth/>,
             },
             {
                 path:"profile",
