@@ -5,7 +5,6 @@ const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
-const { Mongoose } = require("mongoose");
 //access private
 const getMe = asyncHandler(async (req, res) => {
   const { _id, name, email, profileImage } = await User.findById(req.user.id);
@@ -84,7 +83,10 @@ const registerWithGoogle = asyncHandler(async (req, res) => {
 const googleOAuth = asyncHandler(async (req, res) => {
   var selectedUserid,
     selectedUsername,
+    selectedUserProfilImage,
     selectedUseremail = "";
+
+  console.log("1")
   const code = req.query.code;
   try {
     const redirectUrl = "http://127.0.0.1:5001/api/users/oauth";
@@ -96,7 +98,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
     const ut = await oAuth2Client.getToken(code);
     await oAuth2Client.setCredentials(ut.tokens);
     const user = oAuth2Client.credentials;
-    const userGoogleData = await getUserDataFromGoogle(user.access_token);
+    const googleData = await getUserDataFromGoogle(user.access_token);
     const {
       sub,
       name,
@@ -105,7 +107,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
       picture,
       email,
       email_verified,
-    } = userGoogleData;
+    } = googleData;
     /**
          * {
             sub: '105113479171269382757',
@@ -119,27 +121,22 @@ const googleOAuth = asyncHandler(async (req, res) => {
          */
     //checkUsers
     const userExist = await User.findOne({ email });
+    console.log("2")
     if (!userExist) {
-      const nUser = await saveUserByGoogle(
-        sub,
-        name,
-        given_name,
-        family_name,
-        picture,
-        email,
-        email_verified
-      );
+      const nUser = await saveUserByGoogle(sub, name, given_name, family_name, picture, email, email_verified);
       if (!nUser) {
         res.status(400);
         throw new Error("InValied User data");
       }
       selectedUserid = nUser["id"];
-      selectedUsername = nUser["name"];
-      selectedUseremail = nUser["email"];
+      selectedUsername = googleData.name;
+      selectedUserProfilImage = googleData.picture
+      console.log("3")
     } else {
       selectedUserid = userExist["_id"];
       selectedUsername = userExist["name"];
-      selectedUseremail = userExist["email"];
+      selectedUserProfilImage = userExist.profileImage.path
+      console.log("4")
     }
 
     //Kullanıcı Oturumu Açma
@@ -148,79 +145,88 @@ const googleOAuth = asyncHandler(async (req, res) => {
     const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
     const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
     const sessionid = req.sessionID;
-    console.log("req.sessionID", req.sessionID);
-    console.log("req.sessionID", req.session);
     const connectionModel = await ConnectionModel.findOne({ sessionid });
-    console.log("connectionModel", connectionModel);
+    console.log("5")
     if (!connectionModel) {
-      const nSession = await saveConnection(
-        ip,
-        userAgent,
-        "desktop",
-        "web",
-        sessionid,
-        selectedUserid
-      );
+      var geo = geoip.lookup(ip);
       const userToken = generateToken(selectedUserid);
-      if (nSession) {
-        req.session.user = { name: selectedUsername, token: userToken };
-        res.redirect(`http://127.0.0.1:3000/oauth?token=${userToken}`);
+      const nConnection = await saveConnection(geo, ip, userAgent, "desktop", "web", sessionid, userToken, selectedUserid);
+      console.log("6")
+      console.log("nSession", nConnection)
+
+      if (nConnection) {
+        req.session.user = { name: selectedUsername, image: selectedUserProfilImage, token: userToken,
+          lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
+         };
+        res.redirect(`http://localhost:3000/oauth?token=${userToken}`);
       } else {
         res.redirect("http://localhost:3000/404");
       }
-      res.redirect(`http://127.0.0.1:3000/oauth`);
+      console.log("8")
+    } else {
+      const userToken = connectionModel.token;
+      req.session.user = {
+        name: selectedUsername, image: selectedUserProfilImage, token: userToken,
+        lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
+      };
+      res.redirect(`http://127.0.0.1:3000/oauth?token=${userToken}`);
     }
+    console.log("7")
   } catch (error) {
     console.log("error", error);
   }
 });
 
-const saveUserByGoogle = async (
-  sub,
-  name,
-  given_name,
-  family_name,
-  picture,
-  email,
-  email_verified
-) => {
-  const doc = new User();
-  doc.name = name;
-  doc.firstname = given_name;
-  doc.lastname = family_name;
-  doc.email = email;
-  doc.email_verify = email_verified;
-  doc.profileImage.type = "external";
-  doc.profileImage.path = picture;
-  doc.appType = "web";
-  doc.authProvider = "google";
-  doc.authProviderID = sub;
-  const nUser = await doc.save(doc);
-  return {
-    id: nUser["_id"],
-    name: nUser.name,
-    email: nUser.email,
-  };
+const saveUserByGoogle = (sub, name, given_name, family_name, picture, email, email_verified) => {
+  return new Promise((resolve, reject) => {
+    const doc = new User();
+    doc.name = name;
+    doc.firstname = given_name;
+    doc.lastname = family_name;
+    doc.email = email;
+    doc.email_verify = email_verified;
+    doc.profileImage.type = "external";
+    doc.profileImage.path = picture;
+    doc.appType = "web";
+    doc.authProvider = "google";
+    doc.authProviderID = sub;
+    doc.save(function (err, result) {
+      if (err) {
+        reject(err)
+      }
+      else {
+        resolve(result)
+      }
+    })
+  })
 };
 
-const saveConnection = async (
-  ip,
-  userAgent,
-  deviceType,
-  appType,
-  sessionid,
-  userid
-) => {
-  const docSession = new ConnectionModel();
-  docSession.sessionid = sessionid;
-  docSession.ipAddress = ip;
-  docSession.userId = userid;
-  docSession.userAgent = userAgent;
-  docSession.deviceType = deviceType;
-  docSession.appType = appType;
-  const nSession = await docSession.save();
-  if (nSession) return nSession;
-  return null;
+const saveConnection = (geo, ip, userAgent, deviceType, appType, sessionid, token, userid) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new ConnectionModel();
+      doc.sessionid = sessionid;
+      doc.token = token;
+      doc.ipAddress = ip;
+      doc.userId = userid;
+      doc.userAgent = userAgent;
+      doc.deviceType = deviceType;
+      doc.appType = appType;
+      doc.geo = geo
+      doc.save(
+        function (err, result) {
+          if (err) {
+            reject(err)
+          }
+          else {
+            resolve(result)
+          }
+        }
+      );
+    } catch (error) {
+      reject(error)
+    }
+  })
 };
 
 //access public

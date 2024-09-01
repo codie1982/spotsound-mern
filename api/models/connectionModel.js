@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 // Oturum şeması tanımlama
 const connectionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Kullanıcı ID'si
+  token:{ type: String, required: true }, // Kullanıcı Token
   sessionid: { type: String, required: true, unique: true }, // SessionID'ı
   ipAddress: { type: String }, // Kullanıcının oturum açtığı IP adresi
   userAgent: { type: String }, // Kullanıcının cihaz bilgisi

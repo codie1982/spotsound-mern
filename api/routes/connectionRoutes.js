@@ -1,9 +1,9 @@
 const express = require("express")
 const route = express.Router()
-const {che} = require("../controller/connectionController")
+const {checkConnection,connectionLanguage} = require("../controller/connectionController")
 
 
-route.post("/",registerUser)
+route.get("/",checkConnection)
+route.get("/language",connectionLanguage)
 
-//route.put("/:id",updateUser).delete("/:id",deleteUser)
 module.exports = route

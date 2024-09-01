@@ -1,0 +1,9 @@
+{
+    "header" :{
+        "title":"Title",
+        "menu":{
+            "abouth":"Abouth Us!",
+            "contact": "Contect Us!"
+        }
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "header": {
+        "title": "Başlık",
+        "menu": {
+            "abouth": "Hakkımızda",
+            "contact": "Bizimle iletişime geçin"
+        }
+    }
+}

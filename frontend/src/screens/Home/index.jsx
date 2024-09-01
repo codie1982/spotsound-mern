@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from "react-redux"
-import { register, registerWithGoogle, reset } from "../../features/auth/authSlice"
+import { register, registerWithGoogle, resetAuth } from "../../features/auth/authSlice"
+import { check, connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
 import {
   Routes,
   Route,
@@ -18,15 +19,17 @@ import brand from "../../assets/images/brand.png"
 import xLogo from "../../assets/images/X_icon.png"
 import intagramLogo from "../../assets/images/instagram_icon.png"
 import facebookLogo from "../../assets/images/facebook_icon.png"
-import downloadIcon from "../../assets/images/download_icon.png"
-import uploadIcon from "../../assets/images/upload_icon.png"
-import noInternetIcon from "../../assets/images/nointernet_icon.png"
+import downloadImage from "../../assets/images/download.jpg"
+import uploadImage from "../../assets/images/upload.jpg"
+import noInternetImage from "../../assets/images/listentomusic.jpg"
 import googleIcon from "../../assets/images/Google__G__logo.png"
 import logo from "../../assets/images/logo.png"
 import ReactGA from "react-ga4";
 import { useCookies } from 'react-cookie';
+import { useTranslation } from "react-i18next"
 export default function HOME() {
   const [cookies, setCookie] = useCookies(['name']);
+  const [t, i18n] = useTranslation("global")
   ReactGA.send({ hitType: "pageview", page: "/", title: "Home Page" });
   const [formData, setFormData] = useState({
     name: '',
@@ -35,11 +38,14 @@ export default function HOME() {
     password2: '',
   })
   const [first, setFirst] = useState("")
+
+  const [userName, setUsername] = useState("")
+  const [userImages, setUserimages] = useState("")
+  const [connectionLoading, setConnectionLoading] = useState(false)
   useEffect(() => {
-
-    console.log("cookies",cookies)
-
-    dispatch(reset())
+    dispatch(resetAuth())
+    dispatch(resetConnection())
+    dispatch(check())
   }, [])
 
   const login = () => {
@@ -49,28 +55,50 @@ export default function HOME() {
   const { name, email, password, password2 } = formData
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { user, googleurl, isLoading, isError, isSuccess, message } = useSelector(
+
+  const { auth, connection } = useSelector(
     (state) => {
-      console.log("state.auth",state.auth)
-      return state.auth
+      return { auth: state.auth, connection: state.connection }
     }
   )
-
-
+  /* const { connection } = useSelector(
+    (state) => {
+      console.log("state.connection",state.connection)
+      return state.connection
+    }
+  ) */
 
   useEffect(() => {
-    if (isError) {
-      toast.error(message)
+    if (connection) {
+      if (connection.isError) {
+        setUsername("")
+        setUserimages("")
+        setConnectionLoading(false)
+      } else {
+        if (connection && connection.result) {
+          console.log("connection", connection.result.name)
+          setUsername(connection.result.name)
+          setUserimages(connection.result.image)
+        }
+        setConnectionLoading(connection.isLoading)
+      }
+    }
+  }, [connection])
+
+  /*
+  useEffect(() => {
+    if (state.isError) {
+      toast.error(state.auth.message)
     }
 
-    if (isSuccess || user) {
+    if (state.auth.isSuccess || state.auth.user) {
       navigate('/')
     }
-    if(googleurl){
-      window.location.replace(googleurl.url)
+    if (state.auth.googleurl) {
+      window.location.replace(state.auth.googleurl.url)
     }
-    dispatch(reset())
-  }, [user, googleurl, isError, isSuccess, message, navigate, dispatch])
+    dispatch(resetAuth())
+  }, [state, navigate, dispatch]) */
 
 
   const onChange = (e) => {
@@ -93,7 +121,7 @@ export default function HOME() {
       dispatch(register(userData))
     }
   }
-  if (isLoading) {
+  if (connectionLoading) {
     return <Spinner />
   }
   return (
@@ -108,10 +136,10 @@ export default function HOME() {
             <div className="collapse navbar-collapse" id="navbarNav">
               <ul className="navbar-nav ms-auto">
                 <li className="nav-item">
-                  <a className="nav-link" aria-current="page" href="#">Abouth US</a>
+                  <a className="nav-link text-warning" aria-current="page" href="#">{t("header.menu.abouth")}</a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" aria-current="page" href="#">Contact US</a>
+                  <a className="nav-link text-warning" aria-current="page" href="#">{t("header.menu.contact")}</a>
                 </li>
               </ul>
             </div>
@@ -144,9 +172,9 @@ export default function HOME() {
                       </Col>
                     </Row>
 
-                    <Row>
+                    <Row className="mechanis-section">
                       <Col xs="12" md="6">
-                       {/*  <form onSubmit={onSubmit}>
+                        {/*  <form onSubmit={onSubmit}>
                           <div className='form-group'>
                             <input
                               type='text'
@@ -197,10 +225,39 @@ export default function HOME() {
                             </button>
                           </div>
                         </form> */}
-                        <Button  onClick={() => login()} className="btn-google">
-                          <img src={googleIcon} className="btn-google-icon" />
-                          <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
-                        </Button>
+                        {userName ?
+                          <>
+                            <div>
+                              {userImages ?
+                                <>
+                                  <div className="profil-section">
+                                    <div className="profil-body">
+                                      <img className="raunded" src={userImages} />
+                                      <div className="profil-text-body">
+                                        <div className="profil-text-section">
+                                          <div className="text-white">Merhaba {userName}</div>
+                                        </div>
+                                        <div className="profil-text-section">
+                                          <Button variant="outline-danger" className="btn btn-alert">Bu sen değilmisin?</Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </>
+                                :
+                                <>
+                                </>
+                              }
+                            </div>
+                          </>
+                          :
+                          <>
+                            <Button onClick={() => login()} className="btn-google">
+                              <img src={googleIcon} className="btn-google-icon" />
+                              <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
+                            </Button>
+                          </>
+                        }
                       </Col>
                       <Col xs="4" md="2"><a href="https://twitter.com/SpotSoundMusic" target="_blank"><img src={xLogo} /></a></Col>
                       <Col xs="4" md="2"><a href="https://www.instagram.com/spotsoundoffical/" target="_blank"><img src={intagramLogo} /></a></Col>
@@ -215,7 +272,7 @@ export default function HOME() {
                           <Row>
                             <Col>
                               <div className="icon_box">
-                                <img className="icon_image" src={uploadIcon} />
+                                <img className="icon_image" src={uploadImage} />
                               </div>
                             </Col>
                           </Row>
@@ -228,7 +285,7 @@ export default function HOME() {
                           </Row>
                           <Row>
                             <Col>
-                              <div className="icon_box"><img className="icon_image" src={downloadIcon} /></div>
+                              <div className="icon_box"><img className="icon_image" src={downloadImage} /></div>
                             </Col>
                           </Row>
 
@@ -242,7 +299,7 @@ export default function HOME() {
                           <Row>
                             <Col>
                               <div className="icon_box">
-                                <img className="icon_image" src={noInternetIcon} />
+                                <img className="icon_image" src={noInternetImage} />
                               </div>
                             </Col>
                           </Row>
