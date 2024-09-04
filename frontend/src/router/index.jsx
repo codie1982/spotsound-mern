@@ -3,6 +3,8 @@ import Home from "../screens/Home"
 import { MainLayout } from "../layouts/Main";
 import Profile from "../screens/Profile";
 import OAuth from "../screens/OAuth";
+import Abouth from "../screens/Abouth";
+import Contact from "../screens/Contact";
 const routes =  createBrowserRouter([
     {
         path:"/",
@@ -12,6 +14,14 @@ const routes =  createBrowserRouter([
             {
                 index:true,
                 element:<Home/>
+            },
+            {
+                path:"abouth",
+                element:<Abouth/>,
+            },
+            {
+                path:"contact",
+                element:<Contact/>,
             },
             {
                 path:"oauth",

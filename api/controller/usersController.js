@@ -8,14 +8,21 @@ const getUserDataFromGoogle = require("./googleController");
 //access private
 const getMe = asyncHandler(async (req, res) => {
   const { _id, name, email, profileImage } = await User.findById(req.user.id);
-  console.log("_id,name,email,profileImage", _id, name, email, profileImage);
   try {
-    res.status(200).json({
-      id: _id,
-      name,
-      email,
-      image: profileImage.path,
-    });
+    res.status(200).json(
+      {
+        status: {
+          code: 200,
+          description: "Connection Status"
+        },
+        message: "Connection Status",
+        data: {
+          name,
+          email,
+          image: profileImage.path,
+        }
+      }
+    );
   } catch (error) {
     console.error("Error reading data:", error);
   }
@@ -64,20 +71,37 @@ const registerWithGoogle = asyncHandler(async (req, res) => {
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Referrer-Policy", "no-referrer-when-downgrade");
 
+
   const redirectUrl = "http://127.0.0.1:5001/api/users/oauth";
   const oAuth2Client = new OAuth2Client(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
     redirectUrl
   );
-  const authorieUrl = oAuth2Client.generateAuthUrl({
+  const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     scope: "https://www.googleapis.com/auth/userinfo.profile email openid ",
     prompt: "consent",
   });
-  res.status(200).json({
-    url: authorieUrl,
-  });
+  if (url) {
+    res.status(200).json({
+      status: {
+        code: 200,
+        description: "google authentication url"
+      },
+      message: "google authentication url",
+      data: { url }
+    });
+  } else {
+    res.status(400).json({
+      status: {
+        code: 400,
+        description: "no google url"
+      },
+      message: "there is no google authentication url",
+      data: null
+    });
+  }
 });
 
 const googleOAuth = asyncHandler(async (req, res) => {
@@ -86,7 +110,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
     selectedUserProfilImage,
     selectedUseremail = "";
 
-  console.log("1")
+
   const code = req.query.code;
   try {
     const redirectUrl = "http://127.0.0.1:5001/api/users/oauth";
@@ -121,7 +145,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
          */
     //checkUsers
     const userExist = await User.findOne({ email });
-    console.log("2")
+
     if (!userExist) {
       const nUser = await saveUserByGoogle(sub, name, given_name, family_name, picture, email, email_verified);
       if (!nUser) {
@@ -131,12 +155,12 @@ const googleOAuth = asyncHandler(async (req, res) => {
       selectedUserid = nUser["id"];
       selectedUsername = googleData.name;
       selectedUserProfilImage = googleData.picture
-      console.log("3")
+
     } else {
       selectedUserid = userExist["_id"];
       selectedUsername = userExist["name"];
       selectedUserProfilImage = userExist.profileImage.path
-      console.log("4")
+
     }
 
     //Kullanıcı Oturumu Açma
@@ -146,23 +170,22 @@ const googleOAuth = asyncHandler(async (req, res) => {
     const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
     const sessionid = req.sessionID;
     const connectionModel = await ConnectionModel.findOne({ sessionid });
-    console.log("5")
+
     if (!connectionModel) {
       var geo = geoip.lookup(ip);
       const userToken = generateToken(selectedUserid);
       const nConnection = await saveConnection(geo, ip, userAgent, "desktop", "web", sessionid, userToken, selectedUserid);
-      console.log("6")
-      console.log("nSession", nConnection)
-
+      //Mail gönderimi yapıp gönderdiğimiz maili de DBye yazmak gerekli
       if (nConnection) {
-        req.session.user = { name: selectedUsername, image: selectedUserProfilImage, token: userToken,
+        req.session.user = {
+          name: selectedUsername, image: selectedUserProfilImage, token: userToken,
           lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
-         };
+        };
         res.redirect(`http://localhost:3000/oauth?token=${userToken}`);
       } else {
         res.redirect("http://localhost:3000/404");
       }
-      console.log("8")
+
     } else {
       const userToken = connectionModel.token;
       req.session.user = {
@@ -171,7 +194,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
       };
       res.redirect(`http://127.0.0.1:3000/oauth?token=${userToken}`);
     }
-    console.log("7")
+
   } catch (error) {
     console.log("error", error);
   }

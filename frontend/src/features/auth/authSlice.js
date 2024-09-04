@@ -4,8 +4,9 @@ import authService from './authService'
 //const url = JSON.parse(localStorage.getItem('url'))
 
 const initialState = {
-  user:  null,
-  googleurl:null,
+  googleurl: null,
+  data: null,
+  statusCode: null,
   isError: false,
   isSuccess: false,
   isLoading: false,
@@ -33,7 +34,7 @@ export const registerWithGoogle = createAsyncThunk(
   'auth/registerWithGoogle',
   async (_, thunkAPI) => {
     try {
-    return await  authService.registerWithGoogle()
+      return await authService.registerWithGoogle()
     } catch (error) {
       const message =
         (error.response &&
@@ -78,33 +79,38 @@ export const authSlice = createSlice({
       .addCase(register.pending, (state) => {
         state.isLoading = true
       })
-      .addCase(register.fulfilled,(state,action)=>{
+      .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false
         state.isSuccess = true
         state.isError = false
-        state.user = action.payload
+        state.data = action.payload
       })
-      .addCase(register.rejected,(state,action)=>{
+      .addCase(register.rejected, (state, action) => {
         state.isLoading = false
         state.isSuccess = false
         state.isError = true
         state.message = action.payload
-        state.user = null
+        state.data = null
       })
-      .addCase(registerWithGoogle.fulfilled,(state,action)=>{
+      .addCase(registerWithGoogle.pending, (state, action) => {
+        state.isLoading = true
+      })
+      .addCase(registerWithGoogle.fulfilled, (state, action) => {
         state.isLoading = false
         state.isSuccess = true
         state.isError = false
-        state.googleurl = action.payload
+        state.data = action.payload.data
+        state.statusCode = action.payload.status
       })
       .addCase(getMe.pending, (state) => {
         state.isLoading = true
       })
-      .addCase(getMe.fulfilled,(state,action)=>{
+      .addCase(getMe.fulfilled, (state, action) => {
         state.isLoading = false
         state.isSuccess = true
         state.isError = false
-        state.user = action.payload
+        state.data = action.payload.data
+        state.statusCode = action.payload.status
       })
 
   }

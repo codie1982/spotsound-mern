@@ -1,14 +1,19 @@
 import axios from "axios";
-const API_URL = "api/connection/"
+const API_URL = "api/connection"
 export const checkConnection = async () => {
-    const response = await axios.get(API_URL, {});
+  try {
+    const response = await axios.get(API_URL, {})
     return response.data
+  } catch (error) {
+    return error
+  }
+
 }
 export const getLanguage = async () => {
-  const response = await axios.get(API_URL+"language", {});
+  const response = await axios.get(API_URL + "/" + "language", {});
   return response.data
 }
 const connectionService = {
-    checkConnection,getLanguage
-  }
+  checkConnection, getLanguage
+}
 export default connectionService 

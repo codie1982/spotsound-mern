@@ -1,51 +1,112 @@
 import React, { useContext, useEffect, useState } from "react";
-import {onAuthStateChanged} from "../../fetch/auth"
+import { useSelector, useDispatch } from "react-redux"
+import { getMe, register, registerWithGoogle, resetAuth } from "../../features/auth/authSlice"
+import { getConnection, connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
 
-const AuthContext =  React.createContext();
-export function useAuth(){
+const AuthContext = React.createContext();
+export function useAuth() {
     return useContext(AuthContext);
 }
-export function AuthProvider({children}) {
+export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null)
     const [userLoggedIn, setUserLoggedIn] = useState(false);
     const [isEmailUser, setIsEmailUser] = useState(false);
     const [isGoogleUser, setIsGoogleUser] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState("")
+    const [value, setValue] = useState({
+        userLoggedIn: false, user: {}, isLoading: false
+    })
+    const dispatch = useDispatch()
+    const { connection, auth } = useSelector(
+        (state) => {
+            return { connection: state.connection, auth: state.auth }
+        }
+    )
 
+    useEffect(() => {
+        let _token = localStorage.getItem("token")
+        if (!_token) {
+            dispatch(resetAuth())
+            dispatch(resetConnection())
+            dispatch(getConnection())
+        } else {
+            setToken(_token)
+        }
+    }, [])
 
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth,initializeUser);
-        return unsubscribe;
-    }, [])
-
-    async function initializeUser(user){
-        if(user){
-            setCurrentUser({...user})
-               // check if provider is email and password login
-            const isEmail = user.providerData.some(
-                (provider) => provider.providerId === "password"
-            );
-            setIsEmailUser(isEmail);
-
-            setUserLoggedIn(true);
-        }else{
-            setCurrentUser(null);
-            setUserLoggedIn(false);
+        let isLogin = false;
+        let user = {}
+        if (connection) {
+            console.log("connection", connection)
+            setLoading(connection.isLoading)
+            if (connection.data != undefined || connection.data != null) {
+                setToken(connection.data.token)
+            }
         }
-        setLoading(false);
-    }
-        const value ={
-            userLoggedIn,
-            isEmailUser,
-            isGoogleUser,
-            currentUser,
-            setCurrentUser
+    }, [connection])
+    useEffect(() => {
+
+        if (token != null && token != "" && token != undefined) dispatch(getMe(token))
+    }, [token])
+
+    useEffect(() => {
+        let isLogin = false;
+        let user = {}
+        if (auth) {
+            console.log("auth", auth)
+            if (auth.isSuccess) {
+                isLogin = true;
+                setValue((prevState) => ({
+                    ...prevState,
+                    isLoading: connection.isLoading && auth.isLoading,
+                    isLogin,
+                    user: auth.data
+                }))
+            }
+
         }
 
-        return (
-            <AuthContext.Provider value={value}>
-                {!loading && children}
-            </AuthContext.Provider>
-        )
+    }, [auth])
+
+
+    /*   useEffect(() => {
+          if (message) {
+              console.log("context-message", message)
+          }
+         
+          if (isSuccess) {
+              console.log("context-isSuccess", isSuccess)
+          }
+          if (isError) {
+              console.log("context-isError", isError)
+          } else {
+              if (result) {
+                  console.log("context-result", result)
+              }
+          }
+         
+  
+      }, [result, language, isError, isSuccess, message])
+      useEffect(() => {
+          if (isLoading) {
+              console.log("context-isLoading", isLoading)
+          }
+      }, [isLoading]) */
+
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    )
 }
+
+/**
+ *   setValue((prevState) => ({
+                ...prevState,
+                ["userLoggedIn"]: true,
+                ["isLoading"]: connection.isLoading,
+            }))
+ */

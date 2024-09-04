@@ -18,7 +18,6 @@ if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
             res.status(401)
             throw new Error("not authorized")
         }
-        
     }
     if(!token){
         res.status(401)
@@ -27,7 +26,6 @@ if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
 })
 // Oturum kontrolü middleware'i
 async function isSessionActive(req, res, next) {
-    console.log("isSessionActive",req.session)
     if(req.session.user){
         return next();
     }else{

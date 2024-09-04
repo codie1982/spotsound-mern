@@ -2,16 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from "react-redux"
 import { getMe, reset } from "../../features/auth/authSlice"
 import { Row, Col, Spinner } from "react-bootstrap"
-import {
-    Routes,
-    Route,
-    Link,
-    useNavigate,
-    useLocation,
-    Navigate,
-    Outlet,
-    useSearchParams,
-} from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function OAuth() {
     const [token, setToken] = useState()
@@ -22,20 +13,18 @@ export default function OAuth() {
 
     const navigate = useNavigate()
     const dispatch = useDispatch()
-    const { user,isLoading, isError, isSuccess, message } = useSelector(
+    const { user, isLoading, isError, isSuccess, message } = useSelector(
         (state) => {
             return state.auth
         }
     )
+    useEffect(() => { setToken(searchParams.get("token")) }, [])
     useEffect(() => {
-        const token = searchParams.get("token")
-        setToken(token)
         if (token) {
+            localStorage.setItem("token", token)
             dispatch(getMe(token))
-        } else {
-            //navigate("/")
         }
-    }, [])
+    }, [token])
     useEffect(() => {
         if (user) {
             setusername(user.name)
@@ -44,11 +33,11 @@ export default function OAuth() {
         }
     }, [user])
 
-    if(isLoading){
+    if (isLoading) {
         return (
             <div className="container ms-auto">
                 <div className="main-body">
-                <Spinner/>
+                    <Spinner />
                 </div>
             </div>
         )

@@ -14,6 +14,8 @@ import i18next from "i18next"
 import { I18nextProvider } from "react-i18next"
 import global_tr from "./transition/TR/global.json"
 import global_en from "./transition/EN/global.json"
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
+
 i18next.init({
   interpolation: { escapeValue: false },
   lng: "en",
@@ -27,17 +29,32 @@ i18next.init({
   }
 })
 
+
+
+
 ReactGA.initialize("G-6N1Q7S5NLP");
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <CookiesProvider defaultSetOptions={{ path: '/' }}>
-      <I18nextProvider i18n={i18next} >
-        <Provider store={store}>
-          <RouterProvider router={routes} />
-        </Provider>
-      </I18nextProvider>
-    </CookiesProvider>
+    <GoogleReCaptchaProvider
+      reCaptchaKey="6LfGMjUqAAAAALKeBzfeC0Np9etHSQBCE2toVaWW"
+      useEnterprise={false}
+      scriptProps={{
+        async: false, // optional, default to false,
+        defer: false, // optional, default to false
+        appendTo: 'body', // optional, default to "head", can be "head" or "body",
+        nonce: undefined // optional, default undefined
+      }}
+    >
+
+      <CookiesProvider defaultSetOptions={{ path: '/' }}>
+        <I18nextProvider i18n={i18next} >
+          <Provider store={store}>
+              <RouterProvider router={routes} />
+          </Provider>
+        </I18nextProvider>
+      </CookiesProvider>
+    </GoogleReCaptchaProvider>
   </React.StrictMode>
 );
 
