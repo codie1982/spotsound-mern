@@ -8,17 +8,11 @@ export function useAuth() {
     return useContext(AuthContext);
 }
 export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(null)
-    const [userLoggedIn, setUserLoggedIn] = useState(false);
-    const [isEmailUser, setIsEmailUser] = useState(false);
-    const [isGoogleUser, setIsGoogleUser] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [token, setToken] = useState("")
     const [value, setValue] = useState({
         userLoggedIn: false, user: {}, isLoading: false,
         logout: () => {
             let _token = localStorage.getItem("token")
-            console.log("_token", _token)
             dispatch(logoutUser(_token))
         }
     })
@@ -33,7 +27,7 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         let _token = localStorage.getItem("token")
-        if (!_token) {
+        if (_token == undefined) {
             dispatch(resetAuth())
             dispatch(resetConnection())
             dispatch(getConnection())
@@ -45,10 +39,13 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         if (connection) {
-            setLoading(connection.isLoading)
-            if (connection.data != undefined || connection.data != null) {
-                setToken(connection.data.token)
+            if (connection.success) {
+                if (connection.data != undefined || connection.data != null) {
+                    setToken(connection.data.token)
+                    localStorage.setItem("token", connection.data.token)
+                }
             }
+
         }
     }, [connection])
     useEffect(() => {

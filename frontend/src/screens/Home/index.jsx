@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from "react-redux"
 import { register, registerWithGoogle, resetAuth } from "../../features/auth/authSlice"
-import { check, connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
-import {
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-  useLocation,
-  Navigate,
-  Outlet,
-  useSearchParams,
-} from "react-router-dom";
+import { useNavigate, } from "react-router-dom";
 import ManuelSpinner from '../../components/Spinner'
-import { Container, Row, Col, Button, Spinner } from 'react-bootstrap'
+import { Row, Col, Button, Spinner } from 'react-bootstrap'
 import { toast } from 'react-toastify'
-
 import xLogo from "../../assets/images/X_icon.png"
 import intagramLogo from "../../assets/images/instagram_icon.png"
 import facebookLogo from "../../assets/images/facebook_icon.png"
@@ -33,7 +22,6 @@ export default function Home() {
   const { isLoading, isLogin, user, logout } = useAuth()
   const [cookies, setCookie] = useCookies(['name']);
   const [t, i18n] = useTranslation("global")
-
 
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -54,7 +42,6 @@ export default function Home() {
   )
 
   useEffect(() => {
-    console.log("googleAuth",googleAuth)
     if (googleAuth.isError) {
       toast.error(googleAuth.data.message)
     }
@@ -70,7 +57,6 @@ export default function Home() {
 
 
   useEffect(() => {
-   
     if (isLogin) {
       setUsername(user.name)
       setUserimages(user.image)
@@ -95,29 +81,6 @@ export default function Home() {
      }
    }, [connection]) */
 
-
-
-
-  /*   const onChange = (e) => {
-      setFormData((prevState) => ({
-        ...prevState,
-        [e.target.name]: e.target.value,
-      }))
-    } */
-  /*   const onSubmit = (e) => {
-      e.preventDefault()
-  
-      if (password !== password2) {
-        toast.error('password do not match')
-      } else {
-        const userData = {
-          name,
-          email,
-          password,
-        }
-        dispatch(register(userData))
-      }
-    } */
   if (isLoading) {
     return <ManuelSpinner />
   }
@@ -152,57 +115,6 @@ export default function Home() {
 
                   <Row className="mechanis-section">
                     <Col xs="12" md="6">
-                      {/*  <form onSubmit={onSubmit}>
-                          <div className='form-group'>
-                            <input
-                              type='text'
-                              className='form-control'
-                              id='name'
-                              name='name'
-                              value={name}
-                              placeholder='Enter your name'
-                              onChange={onChange}
-                            />
-                          </div>
-                          <div className='form-group'>
-                            <input
-                              type='email'
-                              className='form-control'
-                              id='email'
-                              name='email'
-                              value={email}
-                              placeholder='Enter your email'
-                              onChange={onChange}
-                            />
-                          </div>
-                          <div className='form-group'>
-                            <input
-                              type='password'
-                              className='form-control'
-                              id='password'
-                              name='password'
-                              value={password}
-                              placeholder='Enter password'
-                              onChange={onChange}
-                            />
-                          </div>
-                          <div className='form-group'>
-                            <input
-                              type='password'
-                              className='form-control'
-                              id='password2'
-                              name='password2'
-                              value={password2}
-                              placeholder='Confirm password'
-                              onChange={onChange}
-                            />
-                          </div>
-                          <div className='form-group'>
-                            <button type='submit' className='btn'>
-                              Submit
-                            </button>
-                          </div>
-                        </form> */}
                       {isLogin ?
                         <>
                           <div>
@@ -246,7 +158,7 @@ export default function Home() {
                       }
                     </Col>
                     <Col xs="4" md="2"><a href="https://twitter.com/SpotSoundMusic" target="_blank"><img src={xLogo} /></a></Col>
-                    <Col xs="4" md="2"><a href="https://www.instagram.com/spotsoundoffical/" target="_blank"><img src={intagramLogo} /></a></Col>
+                    <Col xs="4" md="2"><a href="https://www.instagram.com/spotsoundappoffical/" target="_blank"><img src={intagramLogo} /></a></Col>
                     <Col xs="4" md="2"><a href="https://www.facebook.com/profile.php?id=61564695863328&locale=tr_TR" target="_blank"><img src={facebookLogo} /></a></Col>
                   </Row>
                   <Row className="mt-5">
