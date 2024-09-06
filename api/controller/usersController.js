@@ -8,6 +8,7 @@ const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
 const preparedata = require("../config/preparedata")
 var geoip = require('geoip-lite');
+const SCOPE="https://www.googleapis.com/auth/userinfo.profile email openid"
 //access private
 const getMe = asyncHandler(async (req, res) => {
 
@@ -64,7 +65,8 @@ const registerWithGoogle = asyncHandler(async (req, res) => {
   res.header("Referrer-Policy", "no-referrer-when-downgrade");
 
 
-  const redirectUrl = "http://127.0.0.1:5001/api/users/oauth";
+  const redirectUrl = process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
+
   const oAuth2Client = new OAuth2Client(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
@@ -72,7 +74,7 @@ const registerWithGoogle = asyncHandler(async (req, res) => {
   );
   const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
-    scope: "https://www.googleapis.com/auth/userinfo.profile email openid ",
+    scope: SCOPE,
     prompt: "consent",
   });
   if (url) {
@@ -103,7 +105,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
     selectedUseremail = "";
   const code = req.query.code;
   try {
-    const redirectUrl = "http://127.0.0.1:5001/api/users/oauth";
+    const redirectUrl = process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
     const oAuth2Client = new OAuth2Client(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
@@ -171,9 +173,9 @@ const googleOAuth = asyncHandler(async (req, res) => {
           name: selectedUsername, image: selectedUserProfilImage, token: userToken,
           lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
         };
-        res.redirect(`http://127.0.0.1:3000/oauth?token=${userToken}`);
+        res.redirect(`${process.env.REDIRECT_URL}+/oauth?token=${userToken}`);
       } else {
-        res.redirect("http://127.0.0.1:3000/404");
+        res.redirect("https://spotsoundmu");
       }
 
     } else {
@@ -182,7 +184,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
         name: selectedUsername, image: selectedUserProfilImage, token: userToken,
         lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
       };
-      res.redirect(`http://127.0.0.1:3000/oauth?token=${userToken}`);
+      res.redirect(`${process.env.REDIRECT_URL}?token=${userToken}`);
     }
 
   } catch (error) {
