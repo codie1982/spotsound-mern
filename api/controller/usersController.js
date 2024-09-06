@@ -2,7 +2,9 @@ const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const ConnectionModel = require("../models/connectionModel");
 const User = require("../models/userModel");
-const userDb = require("../controller/users/usersDb")
+
+const usernameDb = require("../dbConnect/username/usernameDb")
+const userDb = require("../dbConnect/users/usersDb")
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
@@ -24,25 +26,27 @@ const getMe = asyncHandler(async (req, res) => {
     console.error("Error reading data:", error);
   }
 });
-
 //access public
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    res.status(400);
-    throw new Error("Please add all fields");
+  // Cihaz bilgilerini al
+  const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
+  const { username, email, password } = req.body;
+  if (!username || !email || !password) {
+    res.status(400).preparedata({}, 400, "Please add all fields");
   }
   //checkUsers
-  const userExist = await User.findOne({ email });
+  const isUserExist = await userDb.isUserFromEmail(email);
 
-  if (userExist) {
-    res.status(400);
-    throw new Error("User Already register");
+  if (isUserExist) {
+    res.status(400).preparedata({}, 400, "User Already register");
+  }
+  const isUserNameExist = await usernameDb.findUsername(username);
+  if (isUserNameExist) {
+    res.status(400).preparedata({}, 400, "Username Already Exist");
   }
   //hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  const hashedPassword = await makepassword(password)
   //Create User
   const doc = new User();
   doc.name = name;
@@ -50,6 +54,26 @@ const registerUser = asyncHandler(async (req, res) => {
   doc.password = hashedPassword;
   const nUser = await doc.save(doc);
   if (nUser) {
+    //Connection Oluştur
+    const sessionid = req.sessionID;
+    const connectionModel = await ConnectionModel.findOne({ sessionid });
+    //Connection Oluştur
+    //session'a kullanıcı bilgilerini ekle
+    /**
+     * req.session.user = {
+      name: selectedUsername, image: selectedUserProfilImage, token: userToken,
+      lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
+    };
+     */
+
+    //Onay maili gönder
+    //onay konudu DBye yaz connection id'si ile  Onay konuda expire ekle
+    
+ 
+
+
+
+
     res.status(201).json({
       _id: nUser._id,
       name: nUser.name,
@@ -110,10 +134,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
     selectedUseremail = "";
   const code = req.query.code;
   try {
-    console.log("process.env.CLIENT_ID", process.env.CLIENT_ID)
-    console.log("process.env.CLIENT_SECRET", process.env.CLIENT_SECRET)
-    console.log("redirecServertUrl", redirecServertUrl)
-    console.log("code", code)
     const oAuth2Client = new OAuth2Client(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
@@ -165,7 +185,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
 
     //Kullanıcı Oturumu Açma
     // Cihaz bilgilerini al
-
     const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
     const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
     const sessionid = req.sessionID;
@@ -223,6 +242,29 @@ const saveUserByGoogle = (sub, name, given_name, family_name, picture, email, em
     })
   })
 };
+const saveUser = (sub, name, given_name, family_name, picture, email, email_verified) => {
+  return new Promise((resolve, reject) => {
+    const doc = new User();
+    doc.name = name;
+    doc.firstname = given_name;
+    doc.lastname = family_name;
+    doc.email = email;
+    doc.email_verify = email_verified;
+    doc.profileImage.type = "external";
+    doc.profileImage.path = picture;
+    doc.appType = "web";
+    doc.authProvider = "email";
+
+    doc.save((err, result) => {
+      if (err) {
+        reject(err)
+      }
+      else {
+        resolve(result)
+      }
+    })
+  })
+};
 
 const saveConnection = (geo, ip, userAgent, deviceType, appType, sessionid, token, userid) => {
   return new Promise((resolve, reject) => {
@@ -251,7 +293,6 @@ const saveConnection = (geo, ip, userAgent, deviceType, appType, sessionid, toke
     }
   })
 };
-
 //access private
 const logoutUser = asyncHandler(async (req, res) => {
   try {
@@ -287,6 +328,12 @@ const loginUser = asyncHandler(async (req, res) => {
     console.error("Error reading data:", error);
   }
 });
+
+const makepassword = async (password) => {
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  return hashedPassword
+}
 
 //Generete Token
 const generateToken = (id) => {

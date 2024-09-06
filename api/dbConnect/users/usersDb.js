@@ -12,6 +12,18 @@ const isUser = async (userid) => {
         )
     })
 }
+const isUserFromEmail = async (email) => {
+    return new Promise((resolve, reject) => {
+        UserModel.findOne({ email }, null, null,
+            (err, user) => {
+                if (err) {
+                    reject(false)
+                }
+                resolve({ id: user._id })
+            }
+        )
+    })
+}
 const getUserInfo = async (userid) => {
     return new Promise((resolve, reject) => {
         UserModel.findById({ _id: userid }, '-password')
@@ -26,5 +38,5 @@ const getUserInfo = async (userid) => {
     })
 }
 module.exports = {
-    isUser, getUserInfo
+    isUser, getUserInfo, isUserFromEmail
 };
