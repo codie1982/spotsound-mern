@@ -4,7 +4,7 @@ import authService from './authService'
 //const url = JSON.parse(localStorage.getItem('url'))
 
 const initialState = {
-  googleurl: null,
+  redirecturl:null,
   data: null,
   statusCode: null,
   isError: false,
@@ -29,7 +29,7 @@ export const register = createAsyncThunk(
     }
   }
 )
-// Register user
+// Register user With Google 
 export const registerWithGoogle = createAsyncThunk(
   'auth/registerWithGoogle',
   async (_, thunkAPI) => {
@@ -60,6 +60,23 @@ export const getMe = createAsyncThunk(
         error.message ||
         error.toString()
       return thunkAPI.rejectWithValue(message)
+    }
+  }
+)
+// Logout user
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (token) => {
+    try {
+      return await authService.logoutUser(token)
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString()
+      return message
     }
   }
 )
@@ -99,7 +116,7 @@ export const authSlice = createSlice({
         state.isLoading = false
         state.isSuccess = true
         state.isError = false
-        state.data = action.payload.data
+        state.redirecturl = action.payload.data.url
         state.statusCode = action.payload.status
       })
       .addCase(getMe.pending, (state) => {
@@ -112,7 +129,16 @@ export const authSlice = createSlice({
         state.data = action.payload.data
         state.statusCode = action.payload.status
       })
-
+      .addCase(logoutUser.pending, (state, action) => {
+        state.isLoading = true
+      })
+      .addCase(logoutUser.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isSuccess = true
+        state.isError = false
+        state.data = null
+        state.statusCode = null
+      })
   }
 })
 

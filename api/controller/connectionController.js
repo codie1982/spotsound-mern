@@ -3,40 +3,18 @@ const bcrypt = require("bcryptjs");
 const ConnectionModel = require("../models/connectionModel");
 const jwt = require("jsonwebtoken");
 var geoip = require('geoip-lite');
+const preparedata = require("../config/preparedata")
 const checkConnection = asyncHandler(async (req, res) => {
   if (req.session.user) {
     const token = req.session.user.token
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     if (decoded) {
-      res.status(200).json({
-        status: {
-          code: 200,
-          description: "Connection Status"
-        },
-        message: "Connection Status",
-        data: {
-           token
-        }
-      })
+      res.status(200).json(preparedata({ token }, 200, "Connection Status"))
     } else {
-      res.status(200).json({
-        status: {
-          code: 200,
-          description: "No Connection"
-        },
-        message: "No Connection",
-        data: null
-      })
+      res.status(200).json(preparedata(null, 200, "No Connection"))
     }
-
   } else {
-    res.status(200).json({
-      status: {
-        code: 200,
-        description: "No Connection"
-      },
-      data: null
-    })
+    res.status(200).json(preparedata(null, 200, "No Connection"))
   }
 });
 
@@ -45,15 +23,10 @@ const connectionLanguage = asyncHandler(async (req, res) => {
   //var ip = "83.66.162.84"; //Türkiye IP'si
   //var ip = "207.97.227.239"; // Amerika IP
   var geo = geoip.lookup(ip);
-  res.status(200).json({
-    status: {
-      code: 200,
-      description: "No Connection"
-    },
-    message: "No Connection",
-    data: { lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR" }
-  })
+  var data = { lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR" }
+  res.status(200).json(preparedata(data, 200, "No Connection"))
 });
+//
 
 module.exports = {
   checkConnection, connectionLanguage

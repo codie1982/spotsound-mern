@@ -30,7 +30,7 @@ import { useTranslation } from "react-i18next"
 import { useAuth } from '../../context/authContext'
 export default function Home() {
   ReactGA.send({ hitType: "pageview", page: "/", title: "Home Page" });
-  const { isLoading, isLogin, user } = useAuth()
+  const { isLoading, isLogin, user, logout } = useAuth()
   const [cookies, setCookie] = useCookies(['name']);
   const [t, i18n] = useTranslation("global")
 
@@ -45,6 +45,8 @@ export default function Home() {
   const login = () => {
     dispatch(registerWithGoogle())
   };
+
+
   const googleAuth = useSelector(
     (state) => {
       return state.auth
@@ -52,13 +54,15 @@ export default function Home() {
   )
 
   useEffect(() => {
+    console.log("googleAuth",googleAuth)
     if (googleAuth.isError) {
       toast.error(googleAuth.data.message)
     }
-    if (googleAuth.success)
-      if (googleAuth.data.url) {
-        window.location.replace(googleAuth.data.url)
+    if (googleAuth.isSuccess) {
+      if (googleAuth.redirecturl) {
+        window.location.replace(googleAuth.redirecturl)
       }
+    }
     dispatch(resetAuth())
   }, [googleAuth, navigate, dispatch])
 
@@ -66,7 +70,7 @@ export default function Home() {
 
 
   useEffect(() => {
-
+   
     if (isLogin) {
       setUsername(user.name)
       setUserimages(user.image)
@@ -212,7 +216,7 @@ export default function Home() {
                                         <div className="text-white">Merhaba {userName}</div>
                                       </div>
                                       <div className="profil-text-section">
-                                        <Button variant="outline-danger" className="btn btn-alert">Bu sen değilmisin?</Button>
+                                        <Button onClick={logout} variant="outline-danger" className="btn btn-alert">Bu sen değilmisin?</Button>
                                       </div>
                                     </div>
                                   </div>
@@ -227,7 +231,7 @@ export default function Home() {
                         :
                         <>
                           <Button disabled={googleAuth.isLoading ? true : false} onClick={() => login()} className="btn-google">
-                            {googleAuth && googleAuth.isLoading ?
+                            {googleAuth && googleAuth.isSuccess ?
                               <>
                                 <Spinner animation="grow" role="status" />
                               </>

@@ -2,27 +2,20 @@ const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const ConnectionModel = require("../models/connectionModel");
 const User = require("../models/userModel");
+const userDb = require("../controller/users/usersDb")
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
+const preparedata = require("../config/preparedata")
+var geoip = require('geoip-lite');
 //access private
 const getMe = asyncHandler(async (req, res) => {
-  const { _id, name, email, profileImage } = await User.findById(req.user.id);
+
+  const { _id, name, email, profileImage } = await userDb.getUserInfo(req.user._id)
   try {
-    res.status(200).json(
-      {
-        status: {
-          code: 200,
-          description: "Connection Status"
-        },
-        message: "Connection Status",
-        data: {
-          name,
-          email,
-          image: profileImage.path,
-        }
-      }
-    );
+    var data = { name, email, image: profileImage.path, }
+    res.status(200)
+      .json(preparedata(data, 200, "Connection Status"))
   } catch (error) {
     console.error("Error reading data:", error);
   }
@@ -36,7 +29,6 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Please add all fields");
   }
-
   //checkUsers
   const userExist = await User.findOne({ email });
 
@@ -109,8 +101,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
     selectedUsername,
     selectedUserProfilImage,
     selectedUseremail = "";
-
-
   const code = req.query.code;
   try {
     const redirectUrl = "http://127.0.0.1:5001/api/users/oauth";
@@ -181,9 +171,9 @@ const googleOAuth = asyncHandler(async (req, res) => {
           name: selectedUsername, image: selectedUserProfilImage, token: userToken,
           lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
         };
-        res.redirect(`http://localhost:3000/oauth?token=${userToken}`);
+        res.redirect(`http://127.0.0.1:3000/oauth?token=${userToken}`);
       } else {
-        res.redirect("http://localhost:3000/404");
+        res.redirect("http://127.0.0.1:3000/404");
       }
 
     } else {
@@ -213,7 +203,7 @@ const saveUserByGoogle = (sub, name, given_name, family_name, picture, email, em
     doc.appType = "web";
     doc.authProvider = "google";
     doc.authProviderID = sub;
-    doc.save(function (err, result) {
+    doc.save((err, result) => {
       if (err) {
         reject(err)
       }
@@ -252,6 +242,17 @@ const saveConnection = (geo, ip, userAgent, deviceType, appType, sessionid, toke
   })
 };
 
+//access private
+const logoutUser = asyncHandler(async (req, res) => {
+  try {
+    delete req.session['user']
+    req.session.destroy(function (err) {
+      res.status(200).json(preparedata(null, 200, "user logout successful!"));
+    });
+  } catch (error) {
+    console.error("Error reading data:", error);
+  }
+});
 //access public
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -288,5 +289,6 @@ module.exports = {
   loginUser,
   registerUser,
   registerWithGoogle,
+  logoutUser,
   googleOAuth,
 };

@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken")
 const asyncHandler = require("express-async-handler")
 const User = require("../models/userModel");
+const userDB = require("../controller/users/usersDb")
 const SessionModel = require("../models/connectionModel");
 
 
@@ -11,7 +12,8 @@ if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
             token = req.headers.authorization.split(" ")[1]
             const decoded = jwt.verify(token,process.env.JWT_SECRET)
             //Get user form to token
-            req.user = await User.findById(decoded.id).select("-password")
+           
+            req.user = await userDB.getUserInfo(decoded.id)
             next()
         } catch (error) {
             console.log(error)

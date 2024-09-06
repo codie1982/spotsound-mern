@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux"
-import { getMe, register, registerWithGoogle, resetAuth } from "../../features/auth/authSlice"
+import { getMe, logoutUser, resetAuth } from "../../features/auth/authSlice"
 import { getConnection, connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
 
 const AuthContext = React.createContext();
@@ -15,7 +15,12 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState("")
     const [value, setValue] = useState({
-        userLoggedIn: false, user: {}, isLoading: false
+        userLoggedIn: false, user: {}, isLoading: false,
+        logout: () => {
+            let _token = localStorage.getItem("token")
+            console.log("_token", _token)
+            dispatch(logoutUser(_token))
+        }
     })
     const dispatch = useDispatch()
     const { connection, auth } = useSelector(
@@ -23,6 +28,8 @@ export function AuthProvider({ children }) {
             return { connection: state.connection, auth: state.auth }
         }
     )
+
+
 
     useEffect(() => {
         let _token = localStorage.getItem("token")
@@ -37,10 +44,7 @@ export function AuthProvider({ children }) {
 
 
     useEffect(() => {
-        let isLogin = false;
-        let user = {}
         if (connection) {
-            console.log("connection", connection)
             setLoading(connection.isLoading)
             if (connection.data != undefined || connection.data != null) {
                 setToken(connection.data.token)
@@ -54,19 +58,27 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         let isLogin = false;
-        let user = {}
         if (auth) {
-            console.log("auth", auth)
             if (auth.isSuccess) {
-                isLogin = true;
-                setValue((prevState) => ({
-                    ...prevState,
-                    isLoading: connection.isLoading && auth.isLoading,
-                    isLogin,
-                    user: auth.data
-                }))
+                if (auth.data != null) {
+                    isLogin = true;
+                    setValue((prevState) => ({
+                        ...prevState,
+                        isLoading: connection.isLoading && auth.isLoading,
+                        isLogin,
+                        user: auth.data
+                    }))
+                } else {
+                    //getMe servisinden kayıt gelmez ise
+                    isLogin = false;
+                    setValue((prevState) => ({
+                        ...prevState,
+                        isLoading: connection.isLoading && auth.isLoading,
+                        isLogin,
+                        user: {}
+                    }))
+                }
             }
-
         }
 
     }, [auth])

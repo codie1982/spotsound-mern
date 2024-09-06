@@ -20,7 +20,6 @@ export const getConnection = createAsyncThunk(
     try {
       return await connectionService.checkConnection()
     } catch (error) {
-      console.log("connectionService.checkConnection ", error)
       const message =
         (error.response &&
           error.response.data &&
@@ -31,6 +30,7 @@ export const getConnection = createAsyncThunk(
     }
   }
 )
+
 export const connectionLanguage = createAsyncThunk(
   'connection/language',
   async (thunkAPI) => {

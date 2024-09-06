@@ -7,6 +7,13 @@ const register = async (userData) => {
     }
     return response.data
 }
+const logoutUser = async (token) => {
+    const config = {
+        headers: { Authorization: `Bearer ${token}` }
+    };
+    const response = await axios.post(API_URL + "logout", {},config);
+    return response.data
+}
 const registerWithGoogle = async () => {
     const response = await axios.post(API_URL + "google");
     if (response.data) {
@@ -18,7 +25,7 @@ const me = async (token) => {
     const config = {
         headers: { Authorization: `Bearer ${token}` }
     };
-    
+
     const bodyParameters = {};
     const response = await axios.post(API_URL + "me",
         bodyParameters,
@@ -28,6 +35,6 @@ const me = async (token) => {
     return response.data
 }
 const authService = {
-    register,registerWithGoogle,me
-  }
+    register, registerWithGoogle, me,logoutUser
+}
 export default authService

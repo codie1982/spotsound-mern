@@ -16,6 +16,8 @@ import global_tr from "./transition/TR/global.json"
 import global_en from "./transition/EN/global.json"
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
+
+
 i18next.init({
   interpolation: { escapeValue: false },
   lng: "en",
@@ -37,7 +39,7 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <GoogleReCaptchaProvider
-      reCaptchaKey="6LfGMjUqAAAAALKeBzfeC0Np9etHSQBCE2toVaWW"
+      reCaptchaKey="6LdYSzYqAAAAAIP_06LIzEMCkLnlyilaGCslNO_U"
       useEnterprise={false}
       scriptProps={{
         async: false, // optional, default to false,
@@ -50,7 +52,7 @@ root.render(
       <CookiesProvider defaultSetOptions={{ path: '/' }}>
         <I18nextProvider i18n={i18next} >
           <Provider store={store}>
-              <RouterProvider router={routes} />
+          <RouterProvider router={routes} />
           </Provider>
         </I18nextProvider>
       </CookiesProvider>

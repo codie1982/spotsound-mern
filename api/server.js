@@ -9,9 +9,10 @@ const cors = require('cors');
 
 const usersRoutes = require("./routes/userRoutes.js")
 const connectionRoutes = require("./routes/connectionRoutes.js")
+const supportRoutes = require("./routes/supportRoutes.js")
 
 const { errorHandler } = require("./middelware/errorHandler")
-const nodemailer = require('nodemailer');
+
 
 
 const bodyParser = require("body-parser");
@@ -40,6 +41,8 @@ app.use(session({
 }));
 app.use("/api/users", usersRoutes)
 app.use("/api/connection", connectionRoutes)
+app.use("/api/support", supportRoutes)
+
 app.post("/testmail", (req, res) => {
   // SMTP taşıyıcısını yapılandırma
   let transporter = nodemailer.createTransport({
