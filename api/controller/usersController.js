@@ -8,7 +8,7 @@ const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
 const preparedata = require("../config/preparedata")
 var geoip = require('geoip-lite');
-const SCOPE="https://www.googleapis.com/auth/userinfo.profile email openid"
+const SCOPE = "https://www.googleapis.com/auth/userinfo.profile email openid"
 //access private
 const getMe = asyncHandler(async (req, res) => {
 
@@ -106,6 +106,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
   const code = req.query.code;
   try {
     const redirectUrl = process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
+    console.log("redirectUrl", redirectUrl)
     const oAuth2Client = new OAuth2Client(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
