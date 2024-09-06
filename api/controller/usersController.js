@@ -9,6 +9,9 @@ const getUserDataFromGoogle = require("./googleController");
 const preparedata = require("../config/preparedata")
 var geoip = require('geoip-lite');
 const SCOPE = "https://www.googleapis.com/auth/userinfo.profile email openid"
+const redirecServertUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:5001" : "https://" + process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
+const redirecUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:3000" : "https://" + process.env.REDIRECT_URL;
+const allow_origin_url = process.env.NODE_ENV == "development" ? "http://localhost:3000" : "https://" + process.env.ALLOW_ORJIN_URL;
 //access private
 const getMe = asyncHandler(async (req, res) => {
 
@@ -60,17 +63,19 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 //access public
 const registerWithGoogle = asyncHandler(async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Origin", allow_origin_url);
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Referrer-Policy", "no-referrer-when-downgrade");
 
 
-  const redirectUrl = process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
-
+  console.log("process.env.CLIENT_ID", process.env.CLIENT_ID)
+  console.log("process.env.CLIENT_SECRET", process.env.CLIENT_SECRET)
+  console.log("redirecServertUrl", redirecServertUrl)
+  console.log("SCOPE", SCOPE)
   const oAuth2Client = new OAuth2Client(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
-    redirectUrl
+    redirecServertUrl
   );
   const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
@@ -105,12 +110,14 @@ const googleOAuth = asyncHandler(async (req, res) => {
     selectedUseremail = "";
   const code = req.query.code;
   try {
-    const redirectUrl = process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
-    console.log("redirectUrl", redirectUrl)
+    console.log("process.env.CLIENT_ID", process.env.CLIENT_ID)
+    console.log("process.env.CLIENT_SECRET", process.env.CLIENT_SECRET)
+    console.log("redirecServertUrl", redirecServertUrl)
+    console.log("code", code)
     const oAuth2Client = new OAuth2Client(
       process.env.CLIENT_ID,
       process.env.CLIENT_SECRET,
-      redirectUrl
+      redirecServertUrl
     );
     const ut = await oAuth2Client.getToken(code);
     await oAuth2Client.setCredentials(ut.tokens);
@@ -174,9 +181,9 @@ const googleOAuth = asyncHandler(async (req, res) => {
           name: selectedUsername, image: selectedUserProfilImage, token: userToken,
           lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
         };
-        res.redirect(`${process.env.REDIRECT_URL}+/oauth?token=${userToken}`);
+        res.redirect(`${redirecUrl}/oauth?token=${userToken}`);
       } else {
-        res.redirect("https://spotsoundmu");
+        res.redirect("https://www.spotsoundmusic.com");
       }
 
     } else {
