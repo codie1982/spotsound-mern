@@ -3,8 +3,8 @@ const bcrypt = require("bcryptjs");
 const ConnectionModel = require("../models/connectionModel");
 const User = require("../models/userModel");
 
-const usernameDb = require("../dbConnect/username/usernameDb")
-const userDb = require("../dbConnect/users/usersDb")
+const usernameDb = require("../dbMap/username/usernameDb")
+const userDbmap = require("../dbMap/users/usersDbmap")
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
@@ -16,8 +16,7 @@ const redirecUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:300
 const allow_origin_url = process.env.NODE_ENV == "development" ? "http://localhost:3000" : "https://" + process.env.ALLOW_ORJIN_URL;
 //access private
 const getMe = asyncHandler(async (req, res) => {
-
-  const { _id, name, email, profileImage } = await userDb.getUserInfo(req.user._id)
+  const { name, email, profileImage } = await userDbmap.getUserInfo(req.user._id)
   try {
     var data = { name, email, image: profileImage.path, }
     res.status(200)
@@ -27,7 +26,7 @@ const getMe = asyncHandler(async (req, res) => {
   }
 });
 //access public
-const registerUser = asyncHandler(async (req, res) => {
+const register = asyncHandler(async (req, res) => {
   // Cihaz bilgilerini al
   const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
   const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
@@ -36,7 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400).preparedata({}, 400, "Please add all fields");
   }
   //checkUsers
-  const isUserExist = await userDb.isUserFromEmail(email);
+  const isUserExist = await userDbmap.isUserFromEmail(email);
 
   if (isUserExist) {
     res.status(400).preparedata({}, 400, "User Already register");
@@ -52,8 +51,8 @@ const registerUser = asyncHandler(async (req, res) => {
   doc.name = name;
   doc.email = email;
   doc.password = hashedPassword;
-  const nUser = await doc.save(doc);
-  if (nUser) {
+  const mUser = await userDbmap.add(doc)
+  if (mUser) {
     //Connection Oluştur
     const sessionid = req.sessionID;
     const connectionModel = await ConnectionModel.findOne({ sessionid });
@@ -68,8 +67,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
     //Onay maili gönder
     //onay konudu DBye yaz connection id'si ile  Onay konuda expire ekle
-    
- 
+
+
 
 
 
@@ -152,23 +151,22 @@ const googleOAuth = asyncHandler(async (req, res) => {
       email,
       email_verified,
     } = googleData;
-    /**
-         * {
-            sub: '105113479171269382757',
-            name: 'Engin EROL',
-            given_name: 'Engin',
-            family_name: 'EROL',
-            picture: 'https://lh3.googleusercontent.com/a/ACg8ocK5AcLNndhbXFi8sdw_mo3b3EgkfRZgOOfS77dffHPVj56OswzN=s96-c',
-            email: 'granitjeofizik@gmail.com',
-            email_verified: true
-            }
-         */
     //checkUsers
-    const userExist = await User.findOne({ email });
-
+    const userExist = await userDbmap.isUserFromEmail(email);
     if (!userExist) {
-      const nUser = await saveUserByGoogle(sub, name, given_name, family_name, picture, email, email_verified);
-      if (!nUser) {
+      const doc = new User();
+      doc.name = name;
+      doc.firstname = given_name;
+      doc.lastname = family_name;
+      doc.email = email;
+      doc.email_verify = email_verified;
+      doc.profileImage.type = "external";
+      doc.profileImage.path = picture;
+      doc.appType = "web";
+      doc.authProvider = "google";
+      doc.authProviderID = sub;
+      const mUser = await userDbmap.add(doc)
+      if (!mUser) {
         res.status(400);
         throw new Error("InValied User data");
       }
@@ -219,29 +217,7 @@ const googleOAuth = asyncHandler(async (req, res) => {
   }
 });
 
-const saveUserByGoogle = (sub, name, given_name, family_name, picture, email, email_verified) => {
-  return new Promise((resolve, reject) => {
-    const doc = new User();
-    doc.name = name;
-    doc.firstname = given_name;
-    doc.lastname = family_name;
-    doc.email = email;
-    doc.email_verify = email_verified;
-    doc.profileImage.type = "external";
-    doc.profileImage.path = picture;
-    doc.appType = "web";
-    doc.authProvider = "google";
-    doc.authProviderID = sub;
-    doc.save((err, result) => {
-      if (err) {
-        reject(err)
-      }
-      else {
-        resolve(result)
-      }
-    })
-  })
-};
+
 const saveUser = (sub, name, given_name, family_name, picture, email, email_verified) => {
   return new Promise((resolve, reject) => {
     const doc = new User();
@@ -294,7 +270,7 @@ const saveConnection = (geo, ip, userAgent, deviceType, appType, sessionid, toke
   })
 };
 //access private
-const logoutUser = asyncHandler(async (req, res) => {
+const logout = asyncHandler(async (req, res) => {
   try {
     delete req.session['user']
     req.session.destroy(function (err) {
@@ -305,7 +281,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   }
 });
 //access public
-const loginUser = asyncHandler(async (req, res) => {
+const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400);
@@ -343,9 +319,9 @@ const generateToken = (id) => {
 };
 module.exports = {
   getMe,
-  loginUser,
-  registerUser,
+  login,
+  register,
   registerWithGoogle,
-  logoutUser,
+  logout,
   googleOAuth,
 };

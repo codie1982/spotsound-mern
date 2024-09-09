@@ -28,15 +28,28 @@ const getUserInfo = async (userid) => {
     return new Promise((resolve, reject) => {
         UserModel.findById({ _id: userid }, '-password')
             .lean()
-            .exec((err, user) => {
+            .exec((err, result) => {
                 if (err) {
                     reject(err)
                     return;
                 }
-                resolve({ ...user })
+                resolve({ ...result })
             })
     })
 }
+
+const add = async (user) => {
+    return new Promise((resolve, reject) => {
+        const _user = user
+        _user.save((err, result) => {
+            if (err) {
+                reject(err)
+                return;
+            }
+            resolve({ ...result })
+        })
+    })
+}
 module.exports = {
-    isUser, getUserInfo, isUserFromEmail
+    isUser, getUserInfo, isUserFromEmail,add
 };
