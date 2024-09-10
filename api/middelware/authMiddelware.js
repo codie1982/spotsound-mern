@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken")
 const asyncHandler = require("express-async-handler")
 const User = require("../models/userModel");
-const userDB = require("../controller/users/usersDb")
+const userDB = require("../dbMap/users/usersDbmap")
 const SessionModel = require("../models/connectionModel");
 
 

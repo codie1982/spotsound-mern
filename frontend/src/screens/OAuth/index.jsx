@@ -6,7 +6,9 @@ import { Row, Col, Spinner, Form, ButtonGroup, Button } from "react-bootstrap"
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Lottie from "lottie-react";
 import heartAnimation from "../../assets/images/heart.json";
+import { useTranslation } from "react-i18next"
 export default function OAuth() {
+    const [t, i18n] = useTranslation("global")
     const [token, setToken] = useState()
     const [username, setusername] = useState("")
     const [profileImage, setProfileImage] = useState("")
@@ -70,14 +72,17 @@ export default function OAuth() {
                                                         <Lottie animationData={heartAnimation} />
                                                     </ButtonGroup>
                                                     <ButtonGroup aria-label="Basic example">
-                                                        <Button onClick={() => { navigate("/") }} variant="danger">Ana Sayfaya Dön</Button>
+                                                        <Button onClick={() => { navigate("/") }} variant="danger">{t("oauth.backhome")}</Button>
                                                     </ButtonGroup>
                                                 </div>
+                                                <p className="text-secondary mb-1">{t("oauth.thankyou")}{"Bizi Takip ettiğin için teşekkür ederiz. Seni SpotSound Gelişmelerinden haberdar etmeye devam edeceğiz."}</p>
+
+                                               {/* 
                                                 <p className="text-secondary mb-1">{"Bizi Takip ettiğin için teşekkür ederiz. Seni SpotSound Gelişmelerinden haberdar etmeye devam edeceğiz."}</p>
                                                 <p className="text-secondary mb-1">{"Çok yakında Şarkılarını yükleyebileceğin bir profil sayfası ve yüklediğin şarkıları çevrimdışı olarak dinleyebilmen için bir mobil uygulama ile karşına çıkmaya hazırlanıyoruz."}</p>
                                                 <p className="text-secondary mb-1">{"Potansiyel gelişmelerden haberdar olman için onayını istiyoruz. Eğer bizden haber veya mail almak istemiyorsan istemiyorum checkbox'unu işaretleyebilirsin."}</p>
-
-                                                <Form>
+ */}
+                                                {/* <Form>
                                                     <div className="mb-3">
                                                         <Form.Check type={"checkbox"} id={`check-api-${"checkbox"}`}>
                                                             <Form.Check.Input type={"checkbox"} isValid />
@@ -87,7 +92,7 @@ export default function OAuth() {
                                                             </Form.Control.Feedback>
                                                         </Form.Check>
                                                     </div>
-                                                </Form>
+                                                </Form> */}
                                             </div>
                                         </div>
                                     </div>

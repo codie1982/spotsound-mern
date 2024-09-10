@@ -2,12 +2,15 @@ import React, { useContext, useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux"
 import { getMe, logoutUser, resetAuth } from "../../features/auth/authSlice"
 import { getConnection, connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
-
+import { useTranslation } from "react-i18next"
+import { Spinner } from "react-bootstrap";
 const AuthContext = React.createContext();
 export function useAuth() {
     return useContext(AuthContext);
 }
 export function AuthProvider({ children }) {
+    const [t, i18n] = useTranslation("global")
+    const [isLoading, setIsLoading] = useState(true)
     const [token, setToken] = useState("")
     const [value, setValue] = useState({
         userLoggedIn: false, user: {}, isLoading: false,
@@ -23,6 +26,11 @@ export function AuthProvider({ children }) {
         }
     )
 
+    const handleChangeLanguage = (lang) => {
+        i18n.changeLanguage(lang)
+        console.log("Dil değişti")
+    }
+
 
 
     useEffect(() => {
@@ -31,7 +39,9 @@ export function AuthProvider({ children }) {
             dispatch(resetAuth())
             dispatch(resetConnection())
             dispatch(getConnection())
+
         } else {
+
             setToken(_token)
         }
     }, [])
@@ -39,12 +49,16 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         if (connection) {
+            setIsLoading(connection.isLoading)
             if (connection.success) {
+
                 if (connection.data != undefined || connection.data != null) {
                     setToken(connection.data.token)
                     localStorage.setItem("token", connection.data.token)
                 }
             }
+            if (connection.isSuccess && !connection.isLoading && connection.language != null)
+                handleChangeLanguage(connection.language.toLowerCase())
 
         }
     }, [connection])
@@ -107,7 +121,11 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider value={value}>
-            {children}
+            {isLoading ? <Spinner /> :
+                <>
+                    {children}
+                </>}
+
         </AuthContext.Provider>
     )
 }

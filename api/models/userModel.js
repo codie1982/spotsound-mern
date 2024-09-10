@@ -1,17 +1,17 @@
 const mongoose = require("mongoose");
-const usernameSchema = require("./usernameModel")
+const usernameSchema = require("./usernameSchema");
 
 const imageSchema = new mongoose.Schema({
   type: { type: String, enum: ['internal', 'external'], default: 'internal' },
   path: { type: String }
 });
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema({
   name: { type: String, required: [true, "Please add a name"] },
   password: { type: String },
   firstname: { type: String },
   lastname: { type: String },
   birthdate: { type: Date },
-  username: { type: usernameSchema, default: "" },
+  username: usernameSchema, 
   bio: { type: String, default: "" },
   genre: { type: String, enum: ['man', 'woman', 'pointout'], default: 'pointout' },
   profileImage: { type: imageSchema, default: () => ({}) },  // Varsayılan değer olarak boş bir obje döner,

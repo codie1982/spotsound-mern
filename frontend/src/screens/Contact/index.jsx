@@ -5,15 +5,16 @@ import contactImage from "../../assets/images/contact-background.jpg"
 import { useNavigate, } from "react-router-dom";
 import { addSupport } from "../../features/support/supportSlice"
 import googleIcon from "../../assets/images/Google__G__logo.png"
-import xLogo from "../../assets/images/X_icon.png"
-import intagramLogo from "../../assets/images/instagram_icon.png"
-import facebookLogo from "../../assets/images/facebook_icon.png"
+import Social from "../../components/Social"
+
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/authContext'
 import ManuelSpinner from '../../components/Spinner'
+import { useTranslation } from "react-i18next"
 
 export default function Contact() {
+  const [t, i18n] = useTranslation("global")
   const { isLoading, isLogin, user } = useAuth()
   const [isSuppoertloading, setIsSuppoertloading] = useState(false)
   const [isSuccess, setisSuccess] = useState(false)
@@ -119,7 +120,7 @@ export default function Contact() {
     <div className="flex-row-section" >
       <div className="contact-form-section" >
         <div className='contact-section'>
-          <Card className='shadow p-3 mb-5 bg-body-tertiary rounded' style={{ width: '30rem' }}>
+          <Card className='shadow p-3 mb-5 bg-body-tertiary rounded support-card'>
             {isLogin ?
               <>
                 {isSuppoertloading ?
@@ -131,9 +132,9 @@ export default function Contact() {
                     {isSuccess ?
                       <>
                         <Card.Body>
-                          <Card.Title>Bize Ulaşın</Card.Title>
+                          <Card.Title>{t("contact.contactustitle")}</Card.Title>
                           <Card.Text>
-                            Destek talebiniz başarı ile kayıt altına alınmıştır!
+                            {t("contact.contactusdesc")}
                           </Card.Text>
                           <Card.Text>
                             <div className="profil-section">
@@ -141,7 +142,7 @@ export default function Contact() {
                                 <img className="raunded" src={user.image} />
                                 <div className="profil-text-body">
                                   <div className="profil-text-section">
-                                    <div className="text-black">Merhaba {user.name}</div>
+                                    <div className="text-black"> {t("contact.hello")} {user.name}</div>
                                   </div>
                                   <div className="profil-text-section">
                                     <div className="text-black">{user.email}</div>
@@ -155,9 +156,9 @@ export default function Contact() {
                       :
                       <>
                         <Card.Body>
-                          <Card.Title>Bize Ulaşın</Card.Title>
+                          <Card.Title>{t("contact.contactustitle")}</Card.Title>
                           <Card.Text>
-                            Hertürlü görüş ve öenrilerinizi litfen bizimle paylaşın!
+                            {t("contact.contactusdesc")}
                           </Card.Text>
                           <Card.Text>
                             <div className="profil-section">
@@ -165,7 +166,7 @@ export default function Contact() {
                                 <img className="raunded" src={user.image} />
                                 <div className="profil-text-body">
                                   <div className="profil-text-section">
-                                    <div className="text-black">Merhaba {user.name}</div>
+                                    <div className="text-black"> {t("contact.hello")} {user.name}</div>
                                   </div>
                                   <div className="profil-text-section">
                                     <div className="text-black">{user.email}</div>
@@ -180,14 +181,14 @@ export default function Contact() {
                                 return { ...prevState, "subject": parseInt(e.target.value) }
                               })
                             }} aria-label="Default select example">
-                              <option>Konu Seçin</option>
-                              <option value="1">Destek</option>
-                              <option value="2">Öneri</option>
-                              <option value="3">Şikayet</option>
-                              <option value="4">Verilerimin Silinmesi</option>
+                              <option>{t("contact.selected.title")}</option>
+                              <option value="1">{t("contact.selected.one")}</option>
+                              <option value="2">{t("contact.selected.two")}</option>
+                              <option value="3">{t("contact.selected.three")}</option>
+                              <option value="4">{t("contact.selected.four")}</option>
                             </Form.Select>
                             <Form.Group className="mb-3" controlId="exampleForm.ControlTextarea1">
-                              <Form.Label>Açıklama</Form.Label>
+                              <Form.Label>{t("contact.selectedsupportdescription")}</Form.Label>
                               <Form.Control name="description" as="textarea" onChange={(e) => {
                                 setFormData((prevState) => {
                                   return { ...prevState, "description": e.target.value }
@@ -197,16 +198,16 @@ export default function Contact() {
                             <Card.Text>{lenghtLimitText}</Card.Text>
                             <div className="d-grid gap-2">
                               <Button type='submit' variant="primary" size="lg">
-                                Gönder
+                                {t("contact.selectedsupportbutton")}
                               </Button>
                             </div>
                           </Form>
                         </Card.Body>
                       </>}
                     <Card.Body>
-                      <Card.Title>Bize Ulaşın</Card.Title>
+                      <Card.Title>{t("contact.contactustitle")}</Card.Title>
                       <Card.Text>
-                        Hertürlü görüş ve öenrilerinizi litfen bizimle paylaşın!
+                        {t("contact.contactusdesc")}
                       </Card.Text>
                       <Card.Text>
                         <div className="profil-section">
@@ -214,7 +215,7 @@ export default function Contact() {
                             <img className="raunded" src={user.image} />
                             <div className="profil-text-body">
                               <div className="profil-text-section">
-                                <div className="text-black">Merhaba {user.name}</div>
+                                <div className="text-black">{t("contact.hello")} {user.name}</div>
                               </div>
                               <div className="profil-text-section">
                                 <div className="text-black">{user.email}</div>
@@ -229,14 +230,14 @@ export default function Contact() {
                             return { ...prevState, "subject": parseInt(e.target.value) }
                           })
                         }} aria-label="Default select example">
-                          <option>Konu Seçin</option>
-                          <option value="1">Destek</option>
-                          <option value="2">Öneri</option>
-                          <option value="3">Şikayet</option>
-                          <option value="4">Verilerimin Silinmesi</option>
+                          <option>{t("contact.selected.title")}</option>
+                          <option value="1">{t("contact.selected.one")}</option>
+                          <option value="2">{t("contact.selected.two")}</option>
+                          <option value="3">{t("contact.selected.three")}</option>
+                          <option value="4">{t("contact.selected.four")}</option>
                         </Form.Select>
                         <Form.Group className="mb-3" controlId="exampleForm.ControlTextarea1">
-                          <Form.Label>Açıklama</Form.Label>
+                          <Form.Label>{t("contact.selectedsupportdescription")}</Form.Label>
                           <Form.Control name="description" as="textarea" onChange={(e) => {
                             setFormData((prevState) => {
                               return { ...prevState, "description": e.target.value }
@@ -246,7 +247,7 @@ export default function Contact() {
                         <Card.Text>{lenghtLimitText}</Card.Text>
                         <div className="d-grid gap-2">
                           <Button type='submit' variant="primary" size="lg">
-                            Gönder
+                            {t("contact.selectedsupportbutton")}
                           </Button>
                         </div>
                       </Form>
@@ -255,141 +256,46 @@ export default function Contact() {
               </> :
               <>
                 <Card.Body>
-                  <Card.Title>Bize Ulaşın</Card.Title>
+                  <Card.Title>{t("contact.contactustitle")}</Card.Title>
                   <Card.Text>
-                    Hertürlü görüş ve önerileriniz lütfen bizimle paylaşın!
-                    Ama Öncelikle bizi takip edin.
+                    {t("contact.contactusdesc")}
                   </Card.Text>
                   <Row>
-                    <Col md="10">
+                    <Col xs="12" md="12">
                       <div className="d-grid gap-2">
-                        <Button onClick={() => goHome()} className="btn-google">
+                        <Button onClick={() => goHome()} className="btn-google btn-block w-100">
                           <>
                             <img src={googleIcon} className="btn-google-icon" />
                           </>
-                          <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
+                          <span className="btn-google-text" >{t("contact.followgoogle")}</span>
                         </Button>
                       </div>
                     </Col>
-                    <Col>
-                      <div className='d-flex aling-items-center text-center or-text-content'><span>OR</span></div>
+                    <Col xs="12">
+                      <div className='d-flex aling-items-center text-center or-text-content'><span>{t("contact.or")}</span></div>
                     </Col>
                   </Row>
                   <Row>
-                    <Col>
-                      <div className='d-flex aling-items-center text-center mt-3'>
-                        {"You send us with :"}
-                        <a href="mailto:support@spotsoundmusic.com" className='ms-1' target='_blank'>support@spotsoundmusic.com</a>
-                      </div>
+                    <Col xs="12">
+                      <Row>
+                        <Col xs="12">
+                          <div className='d-flex aling-items-center text-center mt-3 '>
+                            <span className='text-center w-100'>{t("contact.sendustext")}</span>
+                          </div>
+                        </Col >
+                        <Col xs="12">
+                          <div className='d-flex aling-items-center text-center mt-3 '>
+                            <a href="mailto:support@spotsoundmusic.com" className='text-center w-100 ms-1' target='_blank'>support@spotsoundmusic.com</a>
+                          </div>
+                        </Col>
+                      </Row>
                     </Col>
                   </Row>
 
                 </Card.Body></>
             }
-
           </Card>
-
-          {/* <form onSubmit={onSubmit}>
-    <div className='form-group'>
-      <input
-        type='text'
-        className='form-control'
-        id='name'
-        name='name'
-        value={name}
-        placeholder='Enter your name'
-        onChange={onChange}
-      />
-    </div>
-    <div className='form-group'>
-      <input
-        type='email'
-        className='form-control'
-        id='email'
-        name='email'
-        value={email}
-        placeholder='Enter your email'
-        onChange={onChange}
-      />
-    </div>
-    <div className='form-group'>
-      <input
-        type='password'
-        className='form-control'
-        id='password'
-        name='password'
-        value={password}
-        placeholder='Enter password'
-        onChange={onChange}
-      />
-    </div>
-    <div className='form-group'>
-      <input
-        type='password'
-        className='form-control'
-        id='password2'
-        name='password2'
-        value={password2}
-        placeholder='Confirm password'
-        onChange={onChange}
-      />
-    </div>
-    <div className='form-group'>
-      <button type='submit' className='btn'>
-        Submit
-      </button>
-    </div>
-  </form> */}
-          {/*   {userName ?
-            <>
-              <div>
-                {userImages ?
-                  <>
-                    <div className="profil-section">
-                      <div className="profil-body">
-                        <img className="raunded" src={userImages} />
-                        <div className="profil-text-body">
-                          <div className="profil-text-section">
-                            <div className="text-white">Merhaba {userName}</div>
-                          </div>
-                          <div className="profil-text-section">
-                            <Button variant="outline-danger" className="btn btn-alert">Bu sen değilmisin?</Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                  :
-                  <>
-                  </>
-                }
-              </div>
-            </>
-            :
-            <>
-              <Button onClick={() => login()} className="btn-google">
-                <img src={googleIcon} className="btn-google-icon" />
-                <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
-              </Button>
-            </>
-          } */}
-          <Row>
-            <Col xs="4" md="4">
-              <div className="icon-content right">
-                <a className='right' href="https://twitter.com/SpotSoundMusic" target="_blank"><img src={xLogo} /></a>
-              </div>
-            </Col>
-            <Col xs="4" md="4">
-              <div className="icon-content">
-                <a className='center' href="https://www.instagram.com/spotsoundappoffical/" target="_blank"><img src={intagramLogo} /></a>
-              </div>
-            </Col>
-            <Col xs="4" md="4">
-              <div className="icon-content left">
-                <a className='left' href="https://www.facebook.com/profile.php?id=61564695863328&locale=tr_TR" target="_blank"><img src={facebookLogo} /></a>
-              </div>
-            </Col>
-          </Row>
+          <Social />
         </div>
       </div>
       <div className="contact-img-section" >

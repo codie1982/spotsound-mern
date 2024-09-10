@@ -4,7 +4,7 @@ import connectionService from './connectionService'
 //const url = JSON.parse(localStorage.getItem('url'))
 const initialState = {
   data: null,
-  language: "",
+  language: null,
   isError: false,
   isSuccess: false,
   isLoading: false,
@@ -31,7 +31,7 @@ export const getConnection = createAsyncThunk(
   }
 )
 
-export const connectionLanguage = createAsyncThunk(
+/* export const connectionLanguage = createAsyncThunk(
   'connection/language',
   async (thunkAPI) => {
     try {
@@ -46,7 +46,7 @@ export const connectionLanguage = createAsyncThunk(
       return thunkAPI.rejectWithValue(message)
     }
   }
-)
+) */
 export const connectionSlice = createSlice({
   name: 'connection/lang',
   initialState,
@@ -70,6 +70,7 @@ export const connectionSlice = createSlice({
         state.isError = false
         state.data = action.payload.data
         state.statusCode = action.payload.status
+        state.language = action.payload.data.language.lang
       })
       .addCase(getConnection.rejected, (state, action) => {
         //console.log("rejected", state, action)
@@ -78,15 +79,6 @@ export const connectionSlice = createSlice({
         state.isError = true
         state.message = action.payload
         state.result = null
-      })
-      .addCase(connectionLanguage.pending, (state, action) => {
-        state.isLoading = true
-      })
-      .addCase(connectionLanguage.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.isSuccess = true
-        state.isError = false
-        state.language = action.payload.data.lang
       })
   }
 })

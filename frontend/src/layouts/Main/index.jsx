@@ -12,28 +12,32 @@ import 'react-toastify/dist/ReactToastify.css'
 import { AuthProvider } from '../../context/authContext';
 
 
-import { connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
+//import { connectionLanguage, resetConnection } from "../../features/connection/connectionSlice"
 
 export function MainLayout() {
     const dispatch = useDispatch()
     const [t, i18n] = useTranslation("global")
+
     useEffect(() => {
-        dispatch(resetConnection())
-        dispatch(connectionLanguage())
+        //dispatch(resetConnection())
+        //dispatch(connectionLanguage())
     }, [])
-    const connection = useSelector(
+  /*   const connection = useSelector(
         (state) => {
             return state.connection
         }
     )
     const handleChangeLanguage = (lang) => {
         i18n.changeLanguage(lang)
+        console.log("Dil değişti")
     }
     useEffect(() => {
+
         if (connection) {
-            handleChangeLanguage(connection.language.toLowerCase())
+            if (connection.isSuccess && !connection.isLoading && connection.language != null)
+                handleChangeLanguage(connection.language.toLowerCase())
         }
-    }, [connection])
+    }, [connection]) */
 
     return (
         <AuthProvider>
@@ -41,7 +45,7 @@ export function MainLayout() {
                 <Container className="section" fluid>
                     <Header />
                     <Outlet lang={global} />
-                    <Footer />
+                    {/* <Footer /> */}
                 </Container>
                 <ToastContainer />
             </div>

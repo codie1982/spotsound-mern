@@ -3,11 +3,11 @@ import { useSelector, useDispatch } from "react-redux"
 import { register, registerWithGoogle, resetAuth } from "../../features/auth/authSlice"
 import { useNavigate, } from "react-router-dom";
 import ManuelSpinner from '../../components/Spinner'
+import Social from "../../components/Social"
 import { Row, Col, Button, Spinner } from 'react-bootstrap'
 import { toast } from 'react-toastify'
-import xLogo from "../../assets/images/X_icon.png"
-import intagramLogo from "../../assets/images/instagram_icon.png"
-import facebookLogo from "../../assets/images/facebook_icon.png"
+
+
 import downloadImage from "../../assets/images/download.jpg"
 import uploadImage from "../../assets/images/upload.jpg"
 import noInternetImage from "../../assets/images/listentomusic.jpg"
@@ -25,16 +25,11 @@ export default function Home() {
 
   const navigate = useNavigate()
   const dispatch = useDispatch()
-
   const [userName, setUsername] = useState("")
   const [userImages, setUserimages] = useState("")
-
-
   const login = () => {
     dispatch(registerWithGoogle())
   };
-
-
   const googleAuth = useSelector(
     (state) => {
       return state.auth
@@ -52,34 +47,12 @@ export default function Home() {
     }
     dispatch(resetAuth())
   }, [googleAuth, navigate, dispatch])
-
-
-
-
   useEffect(() => {
     if (isLogin) {
       setUsername(user.name)
       setUserimages(user.image)
     }
   }, [isLogin, user])
-
-
-
-  /*  useEffect(() => {
-     if (connection) {
-       if (connection.isError) {
-         setUsername("")
-         setUserimages("")
-         setConnectionLoading(false)
-       } else {
-         if (connection && connection.result) {
-           setUsername(connection.result.name)
-           setUserimages(connection.result.image)
-         }
-         setConnectionLoading(connection.isLoading)
-       }
-     }
-   }, [connection]) */
 
   if (isLoading) {
     return <ManuelSpinner />
@@ -102,14 +75,14 @@ export default function Home() {
                     </Col>
                     <Col md="9">
                       <div className="text-section">
-                        <h2 className="sub-title text-white display-1">Listen Offline Anytime, Anywhere</h2>
-                        <h1 className="main-title text-uppercase text-white display-1">Upload, Play, and Enjoy Your Music Offline with SpotSound</h1>
+                        <h2 className="sub-title text-white display-1">{t("home.h2")}</h2>
+                        <h1 className="main-title text-uppercase text-white display-1">{t("home.h1")}</h1>
                       </div>
                     </Col>
                   </Row>
                   <Row>
                     <Col>
-                      <p className="text-white main-description">SpotSound is a revolutionary music application designed to provide users with a personalized music experience. Our platform allows users to effortlessly upload their favorite songs from their computers, create custom playlists, and enjoy their music offline on any device. With SpotSound, we are bridging the gap between a traditional music app and a social platform, enabling users to share their musical journey with friends and the community. Additionally, our upcoming feature will allow users to broadcast their own live radio stations, bringing a dynamic, interactive element to the music experience. At SpotSound, we prioritize ease of use, music discovery, and community engagement, making us the perfect choice for anyone looking to enhance their listening experience. Join us today and be a part of the SpotSound revolution, where your music journey begins.</p>
+                      <p className="text-white main-description">{t("home.description")}</p>
                     </Col>
                   </Row>
 
@@ -125,10 +98,10 @@ export default function Home() {
                                     <img className="raunded" src={userImages} />
                                     <div className="profil-text-body">
                                       <div className="profil-text-section">
-                                        <div className="text-white">Merhaba {userName}</div>
+                                        <div className="text-white">{t("home.userhospilaty")} {userName}</div>
                                       </div>
                                       <div className="profil-text-section">
-                                        <Button onClick={logout} variant="outline-danger" className="btn btn-alert">Bu sen değilmisin?</Button>
+                                        <Button onClick={logout} variant="outline-danger" className="btn btn-alert">{t("home.isnotyouquestion")}</Button>
                                       </div>
                                     </div>
                                   </div>
@@ -142,7 +115,7 @@ export default function Home() {
                         </>
                         :
                         <>
-                          <Button disabled={googleAuth.isLoading ? true : false} onClick={() => login()} className="btn-google">
+                          <Button disabled={googleAuth.isLoading ? true : false} onClick={() => login()} className="btn-google w-100">
                             {googleAuth && googleAuth.isSuccess ?
                               <>
                                 <Spinner animation="grow" role="status" />
@@ -152,23 +125,23 @@ export default function Home() {
                                 <img src={googleIcon} className="btn-google-icon" />
                               </>
                             }
-                            <span className="btn-google-text" >Follow Us With Google Subscribe!</span>
+                            <span className="btn-google-text" >{t("home.followgoogle")}</span>
                           </Button>
                         </>
                       }
                     </Col>
-                    <Col xs="4" md="2"><a href="https://twitter.com/SpotSoundMusic" target="_blank"><img src={xLogo} /></a></Col>
-                    <Col xs="4" md="2"><a href="https://www.instagram.com/spotsoundappoffical/" target="_blank"><img src={intagramLogo} /></a></Col>
-                    <Col xs="4" md="2"><a href="https://www.facebook.com/profile.php?id=61564695863328&locale=tr_TR" target="_blank"><img src={facebookLogo} /></a></Col>
-                  </Row>
-                  <Row className="mt-5">
                     <Col >
-                      <div className="icon_section">
+                      <Social />
+                    </Col>
+                  </Row>
+                  <Row className='mt-10'>
+                    <Col md="4" xs="6">
+                      <div className="icon_section m-auto">
                         <Row>
-                          <Col><span>Upload Your Computer </span></Col>
+                          <Col><span>{t("home.onestep")}</span></Col>
                         </Row>
                         <Row>
-                          <Col>
+                          <Col md="4" xs="2" >
                             <div className="icon_box">
                               <img className="icon_image" src={uploadImage} />
                             </div>
@@ -176,10 +149,10 @@ export default function Home() {
                         </Row>
                       </div>
                     </Col>
-                    <Col >
+                    <Col md="4" xs="6" >
                       <div className="icon_section">
                         <Row>
-                          <Col><span>Download Your Mobile </span></Col>
+                          <Col><span>{t("home.twostep")} </span></Col>
                         </Row>
                         <Row>
                           <Col>
@@ -189,10 +162,10 @@ export default function Home() {
 
                       </div>
                     </Col>
-                    <Col >
+                    <Col md="4" xs="12" >
                       <div className="icon_section">
                         <Row>
-                          <Col><span>even if you don't have internet</span></Col>
+                          <Col><span>{t("home.thireestep")}</span></Col>
                         </Row>
                         <Row>
                           <Col>

@@ -5,5 +5,42 @@
             "abouth": "Hakkımızda",
             "contact": "Bizimle iletişime geçin"
         }
+    },
+    "home": {
+        "h1": "SpotSound ile Müziğinizi Çevrimdışı Yükleyin, Çalın ve Keyfini Çıkarın",
+        "h2": "Çevrimdışı Dinle Her Zaman, Her Yerde",
+        "description": "Çevrimdışı Dinle Her Zaman, SpotSound kullanıcılara kişiselleştirilmiş bir müzik deneyimi sağlamak için tasarlanmış devrim niteliğinde bir müzik uygulamasıdır. Platformumuz kullanıcıların bilgisayarlarından en sevdikleri şarkıları zahmetsizce yüklemelerine, özel çalma listeleri oluşturmalarına ve müziklerinin keyfini çevrimdışı olarak herhangi bir cihazda çıkarmalarına olanak tanır. SpotSound ile geleneksel bir müzik uygulaması ile sosyal bir platform arasındaki boşluğu kapatarak kullanıcıların müzik yolculuklarını arkadaşları ve toplulukla paylaşmalarını sağlıyoruz. Ayrıca, yaklaşan özelliğimiz kullanıcıların kendi canlı radyo istasyonlarını yayınlamalarına olanak tanıyarak müzik deneyimine dinamik ve etkileşimli bir unsur getirecek. SpotSound'da kullanım kolaylığına, müzik keşfine ve topluluk katılımına öncelik veriyoruz ve bu da bizi dinleme deneyimlerini geliştirmek isteyen herkes için mükemmel bir seçim haline getiriyor. Bugün bize katılın ve müzik yolculuğunuzun başladığı SpotSound devriminin bir parçası olun.",
+        "userhospilaty": "Merhaba",
+        "isnotyouquestion": "Bu sen değilmisin?",
+        "followgoogle": "Bizi Google ile Takip Edin?",
+        "onestep": "Bilgisayarından yükle",
+        "twostep": "Telefonundan indir",
+        "thireestep": "Internetsiz müzik dinle"
+    },
+    "abouth": {
+        "title": "Hakkımızda",
+        "description": "Spotsound geliştirme aşamasında olan bir uygulama. Çevrimdışı müzik dinleme alışkanlıklarını baz alan ve sizin kendi arşivinizi cihaza taşımanızı kolaylaştıran bir uygulama. Biz bu uygulamayı geliştirirken oldukça eğleniyoruz ve bizi çok heyecanlandırıyor. Umarım sizde bizim gibi bu uygulamdan keyif alarak kullanacaksınız. Çok yakında görüşmek üzere.",
+        "description2": "Spotsound uygulaması yeni nesil bir mobil cihazlar için medya player uygulaması. henüz geliştirme aşamasında olan uygulamamaız için yakın zamanda bir lansman planlıyoruz. Kendi dinlediğiniz müzik arşivinin mobil cihazlara  taşımak ve gelişmiş çevrimdışı özelliklerimiz ile cihaza kolayca indirmenizi sağlamaya çalışıyoruz. Bu sayede kendi arşivinizi internetin olmadığı yerlerde de rahatça dinleyebileceksiniz."
+    },
+    "contact": {
+        "contactustitle": "Bize Ulaşın",
+        "contactusdesc": "Destek talebiniz başarı ile kayıt altına alınmıştır!",
+        "hello": "Merhaba ",
+        "selected": {
+            "title": "Konu Seçin ",
+            "one": "Destek ",
+            "two": "Öneri ",
+            "three": "Şikayet ",
+            "four": "Verilerimin Silinmesi "
+        },
+        "selectedsupportdescription": "Açıklama ",
+        "selectedsupportbutton": "Gönder ",
+        "followgoogle": "Bizi Google ile Takip Edin? ",
+        "or": "veya ",
+        "sendustext": "bize yazabilirsiniz? "
+    },
+    "oauth": {
+        "backhome": "Ana Sayfaya Dön",
+        "thankyou": "Bizi Takip ettiğin için teşekkür ederiz. Seni SpotSound Gelişmelerinden haberdar etmeye devam edeceğiz."
     }
 }
