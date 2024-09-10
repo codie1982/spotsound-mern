@@ -1,2 +1,8 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
+Disallow: /test
+Disallow: /testmail
+Disallow: /oauth
+
+# Site haritası
+Sitemap: https://www.spotsoundmusic.com/sitemap.xml

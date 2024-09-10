@@ -43,6 +43,32 @@ app.use("/api/users", usersRoutes)
 app.use("/api/connection", connectionRoutes)
 app.use("/api/support", supportRoutes)
 
+app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.header('Content-Encoding', 'gzip');
+
+  const sitemap = new SitemapStream({ hostname: 'https://www.spotsoundmusic.com' });
+  const pipeline = sitemap.pipe(createGzip());
+
+  // Sitemap'e eklemek istediğiniz URL'leri buraya dinamik olarak ekleyebilirsiniz
+  sitemap.write({ url: '/', changefreq: 'monthly', priority: 1.0 });
+  sitemap.write({ url: '/about', changefreq: 'monthly', priority: 0.8 });
+  sitemap.write({ url: '/contact', changefreq: 'monthly', priority: 0.5 });
+
+  // Eğer veritabanından dinamik içeriklerinizi çekiyorsanız, onları da sitemap'e ekleyin.
+  // Örneğin:
+  /*
+  const pages = await getPagesFromDatabase();
+  pages.forEach(page => {
+    sitemap.write({ url: page.url, changefreq: 'monthly', priority: 0.7 });
+  });
+  */
+
+  sitemap.end();
+
+  streamToPromise(pipeline).then(sm => res.send(sm)).catch(console.error);
+});
+
 app.post("/testmail", (req, res) => {
   // SMTP taşıyıcısını yapılandırma
   let transporter = nodemailer.createTransport({
@@ -73,6 +99,7 @@ app.post("/testmail", (req, res) => {
   });
   res.send("Welcome the spotsound")
 })
+
 app.get("/test", (req, res) => {
   res.send("Welcome the spotsound")
 })
