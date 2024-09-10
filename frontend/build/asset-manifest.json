@@ -1,10 +1,11 @@
 {
   "files": {
-    "main.css": "/static/css/main.e04a222a.css",
-    "main.js": "/static/js/main.0dfa5ee1.js",
+    "main.css": "/static/css/main.0b5b149b.css",
+    "main.js": "/static/js/main.1beed26c.js",
     "static/media/contact-background.jpg": "/static/media/contact-background.5b889c265aec3a5ea9a3.jpg",
     "static/media/background.jpg": "/static/media/background.f6d6e9f0fecc60ef048f.jpg",
     "static/media/abouth-background.jpg": "/static/media/abouth-background.7952567bd27511e8840b.jpg",
+    "static/media/instagram.png": "/static/media/instagram.f6c05cecc3987d4107de.png",
     "static/media/logo.png": "/static/media/logo.c508e4cc482eb9c0e7c8.png",
     "static/media/upload.jpg": "/static/media/upload.c903e49686e413118d0d.jpg",
     "static/media/listentomusic.jpg": "/static/media/listentomusic.c99fda158c835e7ee0ae.jpg",
@@ -12,11 +13,11 @@
     "static/media/Google__G__logo.png": "/static/media/Google__G__logo.cffb915164ee2462d5d3.png",
     "static/media/brand.png": "/static/media/brand.ae8750d95365ee559a89.png",
     "index.html": "/index.html",
-    "main.e04a222a.css.map": "/static/css/main.e04a222a.css.map",
-    "main.0dfa5ee1.js.map": "/static/js/main.0dfa5ee1.js.map"
+    "main.0b5b149b.css.map": "/static/css/main.0b5b149b.css.map",
+    "main.1beed26c.js.map": "/static/js/main.1beed26c.js.map"
   },
   "entrypoints": [
-    "static/css/main.e04a222a.css",
-    "static/js/main.0dfa5ee1.js"
+    "static/css/main.0b5b149b.css",
+    "static/js/main.1beed26c.js"
   ]
 }
