@@ -6,13 +6,14 @@ const MongoStore = require('connect-mongo');
 const colors = require("colors")
 const { connectDB } = require("./config/db.js")
 const cors = require('cors');
-
 const usersRoutes = require("./routes/userRoutes.js")
 const connectionRoutes = require("./routes/connectionRoutes.js")
 const supportRoutes = require("./routes/supportRoutes.js")
 
 const { errorHandler } = require("./middelware/errorHandler")
-
+const { SitemapStream, streamToPromise } = require('sitemap');
+const { createGzip } = require('zlib');
+const fs = require('fs');
 
 
 const bodyParser = require("body-parser");
@@ -44,6 +45,9 @@ app.use("/api/connection", connectionRoutes)
 app.use("/api/support", supportRoutes)
 
 app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.header('Content-Encoding', 'gzip');
+
   res.header('Content-Type', 'application/xml');
   res.header('Content-Encoding', 'gzip');
 
@@ -95,7 +99,7 @@ app.post("/testmail", (req, res) => {
       return console.log(error);
     }
     console.log('Mesaj gönderildi: %s', info.messageId);
-    console.log("info : ",info)
+    console.log("info : ", info)
   });
   res.send("Welcome the spotsound")
 })
