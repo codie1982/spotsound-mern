@@ -23,6 +23,7 @@ const app = express()
 app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Session middleware'i ayarlama
 app.use(session({
@@ -71,6 +72,16 @@ app.get('/sitemap.xml', (req, res) => {
   sitemap.end();
 
   streamToPromise(pipeline).then(sm => res.send(sm)).catch(console.error);
+});
+
+app.get('/images/cover', (req, res) => {
+  const imagePath = path.join(__dirname, 'public/images', "cover.jpg");
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Resim gönderilirken hata oluştu:', err);
+      res.status(404).send('Resim bulunamadı.');
+    }
+  });
 });
 
 app.post("/testmail", (req, res) => {
