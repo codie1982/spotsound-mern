@@ -259,7 +259,7 @@ export default function Contact() {
                 <Card.Body>
                   <Card.Title>{t("contact.contactustitle")}</Card.Title>
                   <Card.Text>
-                    {t("contact.contactusdescsuccess")}
+                    {t("contact.contactusdesc")}
                   </Card.Text>
                   <Row>
                     <Col xs="12" md="12">
