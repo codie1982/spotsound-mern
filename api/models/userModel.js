@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const usernameSchema = require("./usernameSchema");
-const authorizationSchema = require("./authorizationSchema");
+const usernameSchema = require("../schema/usernameSchema");
+const authorizationSchema = require("../schema/authorizationSchema");
 
 const imageSchema = new mongoose.Schema({
   type: { type: String, enum: ['internal', 'external'], default: 'internal' },

@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/recaptcha-enterprise": "^5.11.0",
+    "aws-sdk": "^2.1691.0",
     "axios": "^1.7.5",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
@@ -29,6 +30,7 @@
     "eslint": "^9.9.1",
     "express": "^4.19.2",
     "express-async-handler": "^1.2.0",
+    "express-fileupload": "^1.5.1",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.4.0",
     "express-session": "^1.18.0",

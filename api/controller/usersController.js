@@ -10,7 +10,6 @@ const mailVerifyDbmap = require("../dbMap/mail/mailVerifyDbmap")
 const generateToken = require("../library/user/generate_token")
 const mailController = require("../mail/mailController")
 const isSingleWord = require("../library/user/isSingleWord")
-const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
 const preparedata = require("../config/preparedata")
@@ -231,8 +230,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
     console.log("error", error);
   }
 });
-
-
 //access private
 const logout = asyncHandler(async (req, res) => {
   try {
@@ -246,20 +243,31 @@ const logout = asyncHandler(async (req, res) => {
 });
 //access public
 const login = asyncHandler(async (req, res) => {
+  const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
+  const sessionid = req.sessionID;
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400);
     throw new Error("there is no email or password");
   }
   try {
-    const user = await User.findOne({ email });
+    const user = await userDbmap.getUserFromMail(email);
+    const userid = user._id;
     if (user || bcrypt.compare(password, user.password)) {
-      res.status(200).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        token: generateToken(user._id),
-      });
+      const userToken = generateToken(userid);
+      const geo = geoip.lookup(ip);
+      await connectionDbmap.saveConnection(geo, ip, userAgent, "desktop", "web", sessionid, userToken, userid);
+      req.session.user = {
+        name: user.firstname, image: user.profileImage.path, token: userToken,
+        lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
+      }
+      delete user._id
+      delete user.profileImage._id
+      res.status(200).json(preparedata({
+        ...user,
+        token: userToken,
+      }, 200, "user is login success"));
     } else {
       res.status(400);
       throw new Error("inValide credental");

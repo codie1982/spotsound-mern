@@ -1,6 +1,6 @@
 const express = require("express")
 const route = express.Router()
-const { login, verify, logout, register, registerWithGoogle, googleOAuth, getMe } = require("../controller/usersController")
+const { login, logout, register, registerWithGoogle, googleOAuth, getMe } = require("../controller/usersController")
 const { protect, isAuthenticated, isSessionActive } = require("../middelware/authMiddelware")
 
 route.post("/login", login)
