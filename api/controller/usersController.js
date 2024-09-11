@@ -2,14 +2,19 @@ const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const ConnectionModel = require("../models/connectionModel");
 const User = require("../models/userModel");
-
+const Username = require("../models/usernameModel");
+const Authorizate = require("../models/authorizationModel");
 const usernameDb = require("../dbMap/username/usernameDb")
 const userDbmap = require("../dbMap/users/usersDbmap")
+const mailController = require("../mail/mailController")
+const isSingleWord = require("../library/user/isSingleWord")
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const getUserDataFromGoogle = require("./googleController");
 const preparedata = require("../config/preparedata")
+const CONSTANT = require("../constant/users/user_constant")
 var geoip = require('geoip-lite');
+
 const SCOPE = "https://www.googleapis.com/auth/userinfo.profile email openid"
 const redirecServertUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:5001" : "https://" + process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
 const redirecUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:3000" : "https://" + process.env.REDIRECT_URL;
@@ -27,61 +32,94 @@ const getMe = asyncHandler(async (req, res) => {
 });
 //access public
 const register = asyncHandler(async (req, res) => {
-  // Cihaz bilgilerini al
-  const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
-  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
-  const { username, email, password } = req.body;
-  if (!username || !email || !password) {
-    res.status(400).preparedata({}, 400, "Please add all fields");
-  }
-  //checkUsers
-  const isUserExist = await userDbmap.isUserFromEmail(email);
+  const { firstname, lastname, username, email, device, provider, password } = req.body;
+  if (provider == CONSTANT.EMAIL) {
+    const userAgent = req.headers["user-agent"]; // Kullanıcı ajanı (tarayıcı bilgisi)
+    const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
 
-  if (isUserExist) {
-    res.status(400).preparedata({}, 400, "User Already register");
-  }
-  const isUserNameExist = await usernameDb.findUsername(username);
-  if (isUserNameExist) {
-    res.status(400).preparedata({}, 400, "Username Already Exist");
-  }
-  //hash password
-  const hashedPassword = await makepassword(password)
-  //Create User
-  const doc = new User();
-  doc.name = name;
-  doc.email = email;
-  doc.password = hashedPassword;
-  const mUser = await userDbmap.add(doc)
-  if (mUser) {
-    //Connection Oluştur
-    const sessionid = req.sessionID;
-    const connectionModel = await ConnectionModel.findOne({ sessionid });
-    //Connection Oluştur
-    //session'a kullanıcı bilgilerini ekle
-    /**
-     * req.session.user = {
-      name: selectedUsername, image: selectedUserProfilImage, token: userToken,
-      lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR"
-    };
-     */
+    if (!username || !email || !password) {
+      res.status(400).json(preparedata({}, 400, "Please add all fields"))
+    }
+    if (!isSingleWord(username)) {
+      res.status(400).json(preparedata({}, 400, "Kullanıcı adı tek kelime olmalı"))
+    }
+    //check Email
+    const isUserExist = await userDbmap.isUserFromEmail(email);
+    if (isUserExist) {
+      res.status(400).json(preparedata({}, 400, "User Already register"));
+    }
+    //check Username
+    const isUserNameExist = await usernameDb.find(username);
+    if (isUserNameExist) {
+      res.status(400).json(preparedata(null, 400, "Username Already Exist"));
+    }
+    //Create Use
+    const doc = new User();
+    doc.password = await makepassword(password);
+    doc.firstname = firstname;
+    doc.lastname = lastname;
+    doc.email = email;
+    doc.appType = device;
+    doc.authProvider = provider
+    const mUser = await doc.save()
+    if (mUser) {
+      const userid = mUser._id
+      const newUsername = new Username({
+        userid, // Bu bir ObjectId olmalı (mevcut kullanıcı ID'si)
+        usernames: [
+          {
+            username: username, // Kullanıcı adı buraya eklenir
+          }
+        ]
+      });
+      // Kaydı kaydetme
+      await newUsername.save();
 
-    //Onay maili gönder
-    //onay konudu DBye yaz connection id'si ile  Onay konuda expire ekle
+      const newAuth = new Authorizate({
+        userid, // Bu bir ObjectId olmalı (mevcut kullanıcı ID'si)
+      })
+      //Kullanıcıyı kayıt et
 
+      await newAuth.save()
+      //Onay maili gönder
+      mailController.mailVerify(email).then((code) => {
+        res.status(201).json(preparedata({}, 201, "Kaydınız başarı ile yapıldı. Lütfen mail onay Kodunu gönderiniz."));
+      }).catch((err) => {
+        res.status(201).json(preparedata({}, 201, "Kaydınız başarı ile yapıldı. Lütfen mail onay Kodunu gönderiniz."));
+      })
+    } else {
+      provider
+      res.status(400);
+      throw new Error("InValied DB User ERROR");
+    }
 
-
-
-
-
-    res.status(201).json({
-      _id: nUser._id,
-      name: nUser.name,
-      email: nUser.email,
-      token: generateToken(user._id),
-    });
   } else {
     res.status(400);
     throw new Error("InValied User data");
+  }
+});
+const verify = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+
+  if (!email) {
+    res.status(400);
+    throw new Error("there is no email or password");
+  }
+  try {
+    const user = await User.findOne({ email });
+    if (user || bcrypt.compare(password, user.password)) {
+      res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(400);
+      throw new Error("inValide credental");
+    }
+  } catch (error) {
+    console.error("Error reading data:", error);
   }
 });
 //access public
@@ -155,7 +193,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
     const userExist = await userDbmap.isUserFromEmail(email);
     if (!userExist) {
       const doc = new User();
-      doc.name = name;
       doc.firstname = given_name;
       doc.lastname = family_name;
       doc.email = email;
@@ -178,7 +215,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
       selectedUserid = userExist["_id"];
       selectedUsername = userExist["name"];
       selectedUserProfilImage = userExist.profileImage.path
-
     }
 
     //Kullanıcı Oturumu Açma
@@ -216,7 +252,6 @@ const googleOAuth = asyncHandler(async (req, res) => {
     console.log("error", error);
   }
 });
-
 
 const saveUser = (sub, name, given_name, family_name, picture, email, email_verified) => {
   return new Promise((resolve, reject) => {
@@ -324,4 +359,5 @@ module.exports = {
   registerWithGoogle,
   logout,
   googleOAuth,
+  verify
 };

@@ -1,24 +1,22 @@
 const mongoose = require("mongoose");
 const usernameSchema = require("./usernameSchema");
+const authorizationSchema = require("./authorizationSchema");
 
 const imageSchema = new mongoose.Schema({
   type: { type: String, enum: ['internal', 'external'], default: 'internal' },
   path: { type: String }
 });
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: [true, "Please add a name"] },
   password: { type: String },
-  firstname: { type: String },
-  lastname: { type: String },
-  birthdate: { type: Date },
-  username: usernameSchema, 
+  firstname: { type: String, default: "", required: [true, "Please add a your name"] },
+  lastname: { type: String, default: "", required: [true, "Please add a Family Name"] },
+  birthdate: { type: Date, default: new Date() },
   bio: { type: String, default: "" },
   genre: { type: String, enum: ['man', 'woman', 'pointout'], default: 'pointout' },
   profileImage: { type: imageSchema, default: () => ({}) },  // Varsayılan değer olarak boş bir obje döner,
   status: { type: String, enum: ['active', 'inactive', 'suspended'], default: 'active' },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
   phoneNumbers: [{ // Telefon numaralarını array olarak tanımlama
-    type: { type: String, enum: ['mobile', 'home', 'work'], required: true }, // Telefon tipi
+    type: { type: String, enum: ['mobile', 'home', 'work'] }, // Telefon tipi
     number: { type: String } // Telefon numarası
   }],
   addresses: [{ // Adresleri array olarak tanımlama

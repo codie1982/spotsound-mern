@@ -19,7 +19,12 @@ const isUserFromEmail = async (email) => {
                 if (err) {
                     reject(false)
                 }
-                resolve({ id: user._id })
+                if (user != null) {
+                    resolve({ id: user._id })
+                } else {
+                    resolve(null)
+                }
+
             }
         )
     })
@@ -33,7 +38,7 @@ const getUserInfo = async (userid) => {
                     reject(err)
                     return;
                 }
-                resolve({ ...result })
+                resolve(result)
             })
     })
 }
@@ -46,10 +51,11 @@ const add = async (user) => {
                 reject(err)
                 return;
             }
+            console.log("result", result)
             resolve({ ...result })
         })
     })
 }
 module.exports = {
-    isUser, getUserInfo, isUserFromEmail,add
+    isUser, getUserInfo, isUserFromEmail, add
 };

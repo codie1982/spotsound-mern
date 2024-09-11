@@ -1,19 +1,21 @@
 const express = require("express")
 const route = express.Router()
-const {login,logout,register,registerWithGoogle,googleOAuth,getMe} = require("../controller/usersController")
-const {protect,isAuthenticated,isSessionActive} = require("../middelware/authMiddelware")
+const { login, verify, logout, register, registerWithGoogle, googleOAuth, getMe } = require("../controller/usersController")
+const { protect, isAuthenticated, isSessionActive } = require("../middelware/authMiddelware")
 
-route.post("/login",login)
+route.post("/login", login)
 
-route.post("/register",register)
+route.post("/register", register)
 
-route.post("/google",registerWithGoogle)
+route.post("/verify", verify)
 
-route.get("/oauth",googleOAuth)
+route.post("/google", registerWithGoogle)
 
-route.post("/logout",isSessionActive,protect,logout)
+route.get("/oauth", googleOAuth)
 
-route.post("/me",isSessionActive,protect,getMe)
+route.post("/logout", isSessionActive, protect, logout)
+
+route.post("/me", isSessionActive, protect, getMe)
 
 //route.put("/:id",updateUser).delete("/:id",deleteUser)
 module.exports = route

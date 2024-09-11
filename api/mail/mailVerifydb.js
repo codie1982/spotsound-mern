@@ -1,13 +1,10 @@
-const mailModel = require("../models/mailModel");
-module.exports = function saveMail(from, to, subject, text, info) {
+const mailVerifyModel = require("../models/mailverifyModel");
+function saveMailVerify(email, code) {
     return new Promise((resolve, reject) => {
-        const mailDoc = new mailModel();
-        mailDoc.messageinfo = info;
-        mailDoc.from = from;
-        mailDoc.to = to;
-        mailDoc.subject = subject;
-        mailDoc.text = text;
-        mailDoc.save(
+        const mailVerifyDoc = new mailVerifyModel();
+        mailVerifyDoc.code = code;
+        mailVerifyDoc.mail = email;
+        mailVerifyDoc.save(
             function (err, result) {
                 if (err) {
                     console.log("err", err)
@@ -19,8 +16,11 @@ module.exports = function saveMail(from, to, subject, text, info) {
                     } else {
                         resolve(null)
                     }
+
                 }
             }
         )
     })
 }
+
+module.exports = { saveMailVerify }

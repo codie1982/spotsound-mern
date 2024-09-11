@@ -41,7 +41,7 @@ app.use(session({
     maxAge: 14 * 24 * 60 * 60 * 1000  // Çerez süresi (milisaniye cinsinden)
   }
 }));
-app.use("/api/users", usersRoutes)
+app.use("/api/v10/user", usersRoutes)
 app.use("/api/connection", connectionRoutes)
 app.use("/api/support", supportRoutes)
 
