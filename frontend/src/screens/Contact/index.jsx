@@ -134,7 +134,7 @@ export default function Contact() {
                         <Card.Body>
                           <Card.Title>{t("contact.contactustitle")}</Card.Title>
                           <Card.Text>
-                            {t("contact.contactusdesc")}
+                            {t("contact.contactusdescsuccess")}
                           </Card.Text>
                           <Card.Text>
                             <div className="profil-section">
@@ -253,12 +253,13 @@ export default function Contact() {
                       </Form>
                     </Card.Body>
                   </>}
-              </> :
+              </> 
+              :
               <>
                 <Card.Body>
                   <Card.Title>{t("contact.contactustitle")}</Card.Title>
                   <Card.Text>
-                    {t("contact.contactusdesc")}
+                    {t("contact.contactusdescsuccess")}
                   </Card.Text>
                   <Row>
                     <Col xs="12" md="12">
@@ -292,7 +293,8 @@ export default function Contact() {
                     </Col>
                   </Row>
 
-                </Card.Body></>
+                </Card.Body>
+                </>
             }
           </Card>
           <Social />

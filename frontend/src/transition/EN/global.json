@@ -24,7 +24,8 @@
     },
     "contact": {
         "contactustitle": "Contact us",
-        "contactusdesc": "Your support request has been successfully recorded.!",
+        "contactusdesc": "You can write to us about all kinds of Support, Suggestions and Complaints.",
+        "contactusdescsuccess": "Your support request has been successfully recorded.!",
         "hello": "Hello ",
         "selected": {
             "title": "selected support ",

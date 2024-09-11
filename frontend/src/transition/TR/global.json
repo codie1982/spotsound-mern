@@ -24,7 +24,8 @@
     },
     "contact": {
         "contactustitle": "Bize Ulaşın",
-        "contactusdesc": "Destek talebiniz başarı ile kayıt altına alınmıştır!",
+        "contactusdesc": "Bize Hertürlü Destek, Öneri ve Şikayet konularında yazabilirsiniz.",
+        "contactusdescsuccess": "Destek talebiniz başarı ile kayıt altına alınmıştır!",
         "hello": "Merhaba ",
         "selected": {
             "title": "Konu Seçin ",
