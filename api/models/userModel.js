@@ -4,7 +4,7 @@ const authorizationSchema = require("./authorizationSchema");
 
 const imageSchema = new mongoose.Schema({
   type: { type: String, enum: ['internal', 'external'], default: 'internal' },
-  path: { type: String }
+  path: { type: String, default: "" }
 });
 const userSchema = new mongoose.Schema({
   password: { type: String },

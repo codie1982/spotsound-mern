@@ -7,6 +7,7 @@ const colors = require("colors")
 const { connectDB } = require("./config/db.js")
 const cors = require('cors');
 const usersRoutes = require("./routes/userRoutes.js")
+const verifyRoutes = require("./routes/verifyRoutes.js")
 const connectionRoutes = require("./routes/connectionRoutes.js")
 const supportRoutes = require("./routes/supportRoutes.js")
 
@@ -42,6 +43,7 @@ app.use(session({
   }
 }));
 app.use("/api/v10/user", usersRoutes)
+app.use("/api/v10/verify", verifyRoutes)
 app.use("/api/connection", connectionRoutes)
 app.use("/api/support", supportRoutes)
 

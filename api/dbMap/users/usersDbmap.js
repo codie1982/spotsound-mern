@@ -43,6 +43,32 @@ const getUserInfo = async (userid) => {
     })
 }
 
+const getUserFromMail = async (email) => {
+    return new Promise((resolve, reject) => {
+        UserModel.findOne({ email: email }, '-password')
+            .lean()
+            .exec((err, result) => {
+                if (err) {
+                    reject(err)
+                    return;
+                }
+                resolve(result)
+            })
+    })
+}
+
+const setVerifyMail = async (userid) => {
+    return new Promise((resolve, reject) => {
+        UserModel.findByIdAndUpdate(userid, { email_verify: true }, { new: true }, (err, result) => {
+            if (err) {
+                reject(err)
+                return;
+            }
+            resolve(result)
+        })
+    })
+}
+
 const add = async (user) => {
     return new Promise((resolve, reject) => {
         const _user = user
@@ -57,5 +83,5 @@ const add = async (user) => {
     })
 }
 module.exports = {
-    isUser, getUserInfo, isUserFromEmail, add
+    isUser, getUserInfo, isUserFromEmail, add, getUserFromMail,setVerifyMail
 };

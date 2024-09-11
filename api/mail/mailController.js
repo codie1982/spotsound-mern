@@ -25,7 +25,40 @@ const mailVerify = (email) => {
                             }
                             saveMail(process.env.MAIL_ADRESS, email, subject, text, info)
                                 .then((result) => {
-                                    resolve(code)
+                                    resolve(result)
+                                    if (info) console.log('Mail Onay Kodu Gönderildi: %s', info.messageId);
+                                    if (result) console.log('Mesaj Kayıt edildi: %s', result);
+
+                                }).catch((err) => {
+                                    console.log('Mesaj Kayıt edilemedi: %s', err);
+                                })
+
+                        });
+                })
+        });
+    })
+}
+const aprovemail = () => {
+    return new Promise((resolve, reject) => {
+        createdVerifyCode().then((code) => {
+            mailVerifyDB
+                .saveMailVerify(email, code)
+                .then(() => {
+                    const subject = "Mail Onayi";
+                    const text = `Mail Onay Kodunuz : ${code}`
+                    transporter
+                        .sendMail({
+                            from: process.env.MAIL_ADRESS, // Gönderici
+                            to: email, // Alıcı
+                            subject,
+                            text
+                        }, (error, info) => {
+                            if (error) {
+                                reject(error)
+                            }
+                            saveMail(process.env.MAIL_ADRESS, email, subject, text, info)
+                                .then((result) => {
+                                    resolve(result)
                                     if (info) console.log('Mail Onay Kodu Gönderildi: %s', info.messageId);
                                     if (result) console.log('Mesaj Kayıt edildi: %s', result);
 

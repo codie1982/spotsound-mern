@@ -7,8 +7,6 @@ route.post("/login", login)
 
 route.post("/register", register)
 
-route.post("/verify", verify)
-
 route.post("/google", registerWithGoogle)
 
 route.get("/oauth", googleOAuth)
