@@ -8,11 +8,7 @@ import { Row, Col, Button, Spinner } from 'react-bootstrap'
 import { toast } from 'react-toastify'
 
 
-import downloadImage from "../../assets/images/download.jpg"
-import uploadImage from "../../assets/images/upload.jpg"
-import noInternetImage from "../../assets/images/listentomusic.jpg"
-import googleIcon from "../../assets/images/Google__G__logo.png"
-import logo from "../../assets/images/logo.png"
+
 import ReactGA from "react-ga4";
 import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next"
@@ -69,7 +65,7 @@ export default function Home() {
                   <Row>
                     <Col md="3">
                       <div className="logo_section">
-                        <img src={logo} />
+                        <img src={"https://spotsound-cdn.s3.eu-central-1.amazonaws.com/logo.png?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEHoaDGV1LWNlbnRyYWwtMSJHMEUCIQDN9il%2BeDe8utUtjMU9dF30QdixWsKMqc3ippM6BwhgeAIgda5MBJ2LU%2FuDLysBrIY0SbakFVttHeFaZYh1HmgQisAq8QIIo%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw2OTI4NTk5MTY2MzciDE0vCwBFwpBmob02CCrFApZ2Rqr7W9elo6BEXVXuN1wmFXY8SKYDkaRNBz7ZzVWNEgb58H3iZc%2BjpM1IkDR0hxFvulGf0vg%2Fvh1yhg6oJB%2BFM%2FRw18OzVYtYLdLYOoJ4HAX8qXGxzMYIXpbckzzEQ%2BAKI%2F2DyV7FqSo1GSmgBjNKbLDEKkXIcn7naMpHP%2FrvY%2BMUYN4K3M4PXqaNVP7RuxaIBPdhicn%2FepS6m0YdblG29zrjl4dTGkhZ1YCEDKlMD6l6QHAuQIY4H80xHFSDQM1Tm9nbdRdbp8R7%2BISlS4JtMTswKyusuNh7N%2FYkkmPPbPTu0%2Bf8QXJuw7PhoHmp2%2FSkq%2FPoEOf%2BMy%2FM9jdE2rvrmdkY9OMs4%2Fc9pHI8b4R%2Fy4qNa0KhPMaDID91dZ5O%2BDDGlBKKYu%2BwfTGLWwCKAjrb0RzlefEgTFFisa%2BrZBbFvRnR2ZYwxemKtwY6swJTWRDqgHTd0bKbt0e5b9GeUV5FKNg9Rv%2BXTsXvLHysFMhk2oTpNQOXa9%2FsAG21n54QJdDel3KCuGLOXvJF7qaQdF1MM5KHBWa8GsvQwOqIGG2CPp0PwNdIBJI8LtPx3To4o1%2Bjg3nYvt3Fvdjtr4URArGiZKUuOC9XYsW3wxHqViQ8cs4Cd4c2PZSKlCxb6xFSPeqzmiiB8MM6fRL61fZ2zD8j3%2FiWH20jIPXhn%2BVTQMBpP9J89vQV%2Ft1iWBm6GUXSGaWrQfwkOz7l7%2FU5Vu2XiRWo%2BO%2BpQb9DQYUs92Nhw169IFd7sSIVDyrNbqtrTn2KOChbxaPqoAGplSipxPuxonZQWc%2FJyCWVzPzPBWdWef0GX%2FnIZIc98vEhsNta5Ljw8eJmdVOOg7ylJl%2FsuK35DdXD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240912T093254Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIA2CUNLKFO6GAMUIG6%2F20240912%2Feu-central-1%2Fs3%2Faws4_request&X-Amz-Signature=1c97d6684f3aa2d8231f9d49dcb3ff910c66957685f9bce19edd809f53070110"} />
                       </div>
 
                     </Col>
@@ -123,7 +119,7 @@ export default function Home() {
                               </>
                               :
                               <>
-                                <img src={googleIcon} className="btn-google-icon" />
+                                <img src={"../../assets/images/Google__G__logo.png"} className="btn-google-icon" />
                               </>
                             }
                             <span className="btn-google-text" >{t("home.followgoogle")}</span>
@@ -144,7 +140,7 @@ export default function Home() {
                         <Row>
                           <Col md="4" xs="2" >
                             <div className="icon_box">
-                              <img className="icon_image" src={uploadImage} />
+                              <img className="icon_image" src={"../../assets/images/upload.jpg"} />
                             </div>
                           </Col>
                         </Row>
@@ -157,7 +153,7 @@ export default function Home() {
                         </Row>
                         <Row>
                           <Col>
-                            <div className="icon_box"><img className="icon_image" src={downloadImage} /></div>
+                            <div className="icon_box"><img className="icon_image" src={"../../assets/images/download.jpg"} /></div>
                           </Col>
                         </Row>
 
@@ -171,7 +167,7 @@ export default function Home() {
                         <Row>
                           <Col>
                             <div className="icon_box">
-                              <img className="icon_image" src={noInternetImage} />
+                              <img className="icon_image" src={"../../assets/images/listentomusic.jpg"} />
                             </div>
                           </Col>
                         </Row>

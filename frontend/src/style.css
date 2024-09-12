@@ -70,7 +70,7 @@ h5,
 .hero {
   position: relative;
   height: 100vh;
-  background-image: url("../src/assets/images/background.jpg");
+  background-image: url("./assets/images/background.jpg");
   background-size: cover;
   background-repeat: no-repeat;
 }

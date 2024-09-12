@@ -1,5 +1,5 @@
 import axios from "axios";
-const API_URL = "api/connection"
+const API_URL = "api/v10/connection"
 export const checkConnection = async () => {
   try {
     const response = await axios.get(API_URL, {})
