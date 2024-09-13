@@ -5,12 +5,15 @@ const express = require("express")
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const colors = require("colors")
-const { connectDB } = require("../api/config/db.js")
-const usersRoutes = require("../api/routes/userRoutes.js")
-const verifyRoutes = require("../api/routes/verifyRoutes.js")
-const connectionRoutes = require("../api/routes/connectionRoutes.js")
-const supportRoutes = require("../api/routes/supportRoutes.js")
-const { errorHandler } = require("../api/middelware/errorHandler.js")
+const fileUpload = require('express-fileupload');
+const { connectDB } = require("../api/config/db")
+const uploadRoutes = require("../api/routes/uploadRoutes")
+const usersRoutes = require("../api/routes/userRoutes")
+const verifyRoutes = require("../api/routes/verifyRoutes")
+const connectionRoutes = require("../api/routes/connectionRoutes")
+const supportRoutes = require("../api/routes/supportRoutes")
+const { errorHandler } = require("../api/middelware/errorHandler")
+
 
 const cors = require('cors');
 const { SitemapStream, streamToPromise } = require('sitemap');
@@ -24,11 +27,17 @@ const fs = require('fs');
 const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 3000;
 connectDB()
+
 const app = express()
 app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Middleware
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+}));
 
 // Session middleware'i ayarlama
 app.use(session({
@@ -46,6 +55,8 @@ app.use(session({
     maxAge: 14 * 24 * 60 * 60 * 1000  // Çerez süresi (milisaniye cinsinden)
   }
 }));
+
+app.use("/api/v10/upload", uploadRoutes)
 app.use("/api/v10/user", usersRoutes)
 app.use("/api/v10/verify", verifyRoutes)
 app.use("/api/v10/connection", connectionRoutes)

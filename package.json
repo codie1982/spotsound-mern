@@ -16,6 +16,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.651.0",
+    "@aws-sdk/lib-storage": "^3.651.0",
     "@babel/preset-react": "^7.24.7",
     "@babel/register": "^7.24.6",
     "@google-cloud/recaptcha-enterprise": "^5.11.0",
@@ -53,6 +55,7 @@
     "react-router-dom": "^6.26.2",
     "sitemap": "^8.0.0",
     "supertest": "^7.0.0",
+    "uuid": "^10.0.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
