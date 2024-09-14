@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "api/support"
+const API_URL = "api/v10/support"
 export const add = async (recaptchaToken, subject, description) => {
 
   let token = localStorage.getItem("token")

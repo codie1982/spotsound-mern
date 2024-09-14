@@ -8,11 +8,7 @@ import { Row, Col, Button, Spinner } from 'react-bootstrap'
 import { toast } from 'react-toastify'
 
 
-import downloadImage from "../../assets/images/download.jpg"
-import uploadImage from "../../assets/images/upload.jpg"
-import noInternetImage from "../../assets/images/listentomusic.jpg"
-import googleIcon from "../../assets/images/Google__G__logo.png"
-import logo from "../../assets/images/logo.png"
+
 import ReactGA from "react-ga4";
 import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next"
@@ -69,7 +65,7 @@ export default function Home() {
                   <Row>
                     <Col md="3">
                       <div className="logo_section">
-                        <img src={logo} />
+                        <img src={"https://spotsound-cdn.s3.eu-central-1.amazonaws.com/site-meta/logo.png"} />
                       </div>
 
                     </Col>
@@ -123,7 +119,7 @@ export default function Home() {
                               </>
                               :
                               <>
-                                <img src={googleIcon} className="btn-google-icon" />
+                                <img src={"../../assets/images/Google__G__logo.png"} className="btn-google-icon" />
                               </>
                             }
                             <span className="btn-google-text" >{t("home.followgoogle")}</span>
@@ -144,7 +140,7 @@ export default function Home() {
                         <Row>
                           <Col md="4" xs="2" >
                             <div className="icon_box">
-                              <img className="icon_image" src={uploadImage} />
+                              <img className="icon_image" src={"../../assets/images/upload.jpg"} />
                             </div>
                           </Col>
                         </Row>
@@ -157,7 +153,7 @@ export default function Home() {
                         </Row>
                         <Row>
                           <Col>
-                            <div className="icon_box"><img className="icon_image" src={downloadImage} /></div>
+                            <div className="icon_box"><img className="icon_image" src={"../../assets/images/download.jpg"} /></div>
                           </Col>
                         </Row>
 
@@ -171,7 +167,7 @@ export default function Home() {
                         <Row>
                           <Col>
                             <div className="icon_box">
-                              <img className="icon_image" src={noInternetImage} />
+                              <img className="icon_image" src={"../../assets/images/listentomusic.jpg"} />
                             </div>
                           </Col>
                         </Row>

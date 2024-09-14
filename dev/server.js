@@ -1,30 +1,44 @@
+
 require("dotenv").config()
-const path = require("path")
+const path = require('path');
 const express = require("express")
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const colors = require("colors")
-const { connectDB } = require("./config/db.js")
-const cors = require('cors');
-const usersRoutes = require("./routes/userRoutes.js")
-const verifyRoutes = require("./routes/verifyRoutes.js")
-const connectionRoutes = require("./routes/connectionRoutes.js")
-const supportRoutes = require("./routes/supportRoutes.js")
+const fileUpload = require('express-fileupload');
+const { connectDB } = require("../api/config/db")
+const packagesRoutes = require("../api/routes/packagesRoutes")
+const uploadRoutes = require("../api/routes/uploadRoutes")
+const usersRoutes = require("../api/routes/userRoutes")
+const verifyRoutes = require("../api/routes/verifyRoutes")
+const connectionRoutes = require("../api/routes/connectionRoutes")
+const supportRoutes = require("../api/routes/supportRoutes")
+const { errorHandler } = require("../api/middelware/errorHandler")
 
-const { errorHandler } = require("./middelware/errorHandler")
+
+const cors = require('cors');
 const { SitemapStream, streamToPromise } = require('sitemap');
 const { createGzip } = require('zlib');
-const fs = require('fs');
+
+
+
+//const App = require('../frontend/src/index.js'); // React uygulamanızı bu şekilde import edin
 
 
 const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 3000;
 connectDB()
+
 const app = express()
 app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Middleware
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+}));
 
 // Session middleware'i ayarlama
 app.use(session({
@@ -42,11 +56,13 @@ app.use(session({
     maxAge: 14 * 24 * 60 * 60 * 1000  // Çerez süresi (milisaniye cinsinden)
   }
 }));
+
+app.use("/api/v10/package", packagesRoutes)
+app.use("/api/v10/upload", uploadRoutes)
 app.use("/api/v10/user", usersRoutes)
 app.use("/api/v10/verify", verifyRoutes)
-app.use("/api/connection", connectionRoutes)
-app.use("/api/support", supportRoutes)
-
+app.use("/api/v10/connection", connectionRoutes)
+app.use("/api/v10/support", supportRoutes)
 app.get('/sitemap.xml', (req, res) => {
   res.header('Content-Type', 'application/xml');
   res.header('Content-Encoding', 'gzip');
@@ -85,41 +101,6 @@ app.get('/images/cover', (req, res) => {
     }
   });
 });
-
-app.post("/testmail", (req, res) => {
-  // SMTP taşıyıcısını yapılandırma
-  let transporter = nodemailer.createTransport({
-    host: 'mail.kurumsaleposta.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: 'info@spotsoundmusic.com', // Kullanıcı adı
-      pass: 'S2=:2qY15j:OD:qv', // Şifreniz
-    },
-    tls: {
-      // Güvenli olmayan yeniden müzakereye izin verir, ancak güvenli değil
-      rejectUnauthorized: false,
-    }
-  });
-  // Test mail gönderimi
-  transporter.sendMail({
-    from: 'info@spotsoundmusic.com', // Gönderici
-    to: 'granitjeofizik@gmail.com', // Alıcı
-    subject: 'Test',
-    text: 'Bu bir test mailidir.'
-  }, (error, info) => {
-    if (error) {
-      return console.log(error);
-    }
-    console.log('Mesaj gönderildi: %s', info.messageId);
-    console.log("info : ", info)
-  });
-  res.send("Welcome the spotsound")
-})
-
-app.get("/test", (req, res) => {
-  res.send("Welcome the spotsound")
-})
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/build")))

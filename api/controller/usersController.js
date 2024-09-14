@@ -54,7 +54,7 @@ const register = asyncHandler(async (req, res) => {
     if (isUserNameExist) {
       res.status(400).json(preparedata(null, 400, "Username Already Exist"));
     }
-    //Create Use
+    //Create User
     const doc = new User();
     doc.password = await makepassword(password);
     doc.firstname = firstname;
