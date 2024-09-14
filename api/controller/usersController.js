@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const ConnectionModel = require("../models/connectionModel");
 const User = require("../models/userModel");
+const AccountModel = require("../models/accountModel.js");
 const Username = require("../models/usernameModel");
 const Authorizate = require("../models/authorizationModel");
 const usernameDb = require("../dbMap/username/usernameDb")
@@ -15,7 +16,8 @@ const getUserDataFromGoogle = require("./googleController");
 const preparedata = require("../config/preparedata")
 const CONSTANT = require("../constant/users/user_constant")
 var geoip = require('geoip-lite');
-const connectionDbmap = require("../dbMap/connection/connectionDbmap")
+const connectionDbmap = require("../dbMap/connection/connectionDbmap");
+const PackageModel = require("../models/packageModel.js");
 const SCOPE = "https://www.googleapis.com/auth/userinfo.profile email openid"
 const redirecServertUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:5001" : "https://" + process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
 const redirecUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:3000" : "https://" + process.env.REDIRECT_URL;
@@ -65,6 +67,7 @@ const register = asyncHandler(async (req, res) => {
     const mUser = await doc.save()
     if (mUser) {
       const userid = mUser._id
+      //Kullancı Adı kayıt
       const newUsername = new Username({
         userid, // Bu bir ObjectId olmalı (mevcut kullanıcı ID'si)
         usernames: [
@@ -73,15 +76,20 @@ const register = asyncHandler(async (req, res) => {
           }
         ]
       });
-      // Kaydı kaydetme
       await newUsername.save();
-
+      //Kullancı Yetkileri Kayıt
       const newAuth = new Authorizate({
         userid, // Bu bir ObjectId olmalı (mevcut kullanıcı ID'si)
       })
-      //Kullanıcıyı kayıt et
-
       await newAuth.save()
+      await newUsername.save();
+      const freePackage = await PackageModel.findOne({ type: "free" })
+      //Kullancı Yetkileri Kayıt
+      const newAccount = new AccountModel({
+        userid,
+        packages: [freePackage]
+      })
+      await newAccount.save()
       //Onay maili gönder
       mailController.mailVerify(email)
         .then((code) => {

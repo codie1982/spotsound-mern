@@ -4,6 +4,5 @@ const {checkConnection,connectionLanguage} = require("../controller/connectionCo
 
 
 route.get("/",checkConnection)
-route.get("/language",connectionLanguage)
 
 module.exports = route

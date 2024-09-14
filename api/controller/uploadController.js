@@ -7,9 +7,11 @@ const allowedImageMimeTypes = require("../helpers/mimes/imagesmimes")
 const allowedVideoMimeTypes = require("../helpers/mimes/videomimes")
 const aws = require("../config/aws")
 
+const { calculateBalancing, calculateReminding } = require("../calculate/balance")
 const UploadModel = require("../models/uploadModel")
+
 const { getFolderPath, sanitizeFileName, SONG, IMAGE, VIDEO } = require('../helpers/folder'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
-const validateFolderPath = require('../helpers/validatefolder'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
+const {validateFolderPath} = require('../helpers/validatename'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
 
 const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB
 const upload = asyncHandler(async (req, res) => {
@@ -27,34 +29,53 @@ const upload = asyncHandler(async (req, res) => {
     if (!Array.isArray(uploadedFiles)) {
       uploadedFiles = [uploadedFiles];
     }
+    const balance = await calculateBalancing(userid) //bakiyesi balance.song,balance.video
 
-
-
-    // Sadece ses dosyalarını kabul eden MIME türleri
+    if (balance.song <= 0 && balance.video <= 0) {
+      return res.status(400).json(ApiResponse.error(400, 'Bu işlem için yeterli bakiyen bulunmamaktadır.'));
+    }
 
     // Klasör yolunu doğrulama
     if (folderPath && !validateFolderPath(folderPath)) {
       return res.status(400).json(ApiResponse.error(400, 'Geçersiz klasör yolu.'));
     }
+    const totalSize = uploadedFiles.reduce((acc, file) => {
+      if (file.mimetype == SONG) {
+        acc.songSize += file.size;
+      } else if (file.mimetype == VIDEO) {
+        acc.videoSize += file.size;
+      }
+      return acc;
+    }, { song: 0, video: 0 });
+
     const uploadPromises = uploadedFiles.map(async (file) => {
       // Dosya türü kontrolü
       let fileType = '';
       if (allowedSongsMimeTypes.includes(file.mimetype)) {
         fileType = SONG;
+        if (totalSize.song > balance.song) {
+          return res.status(400).json(ApiResponse.error(400, 'şarkıları yüklemek için yeterli bakiyen bulunmamaktadır.'));
+        }
       } else if (allowedVideoMimeTypes.includes(file.mimetype)) {
         fileType = VIDEO;
+        if (totalSize.video > balance.video) {
+          return res.status(400).json(ApiResponse.error(400, 'videoları yüklemek için yeterli bakiyen bulunmamaktadır.'));
+        }
       } else if (allowedImageMimeTypes.includes(file.mimetype)) {
         fileType = IMAGE;
       } else {
         return { name: file.name, error: 'Desteklenmeyen dosya türü.', success: false };
       }
+
+
       const folderPath = getFolderPath(uploadtype, userid); // Örneğin: "music/Artist1/"
       const uniqueFileName = `${uuidv4()}-${sanitizeFileName(file.name)}`;
       const objectKey = `${folderPath.concat(uniqueFileName)}`; // Örneğin: "music/Artist1/uuid-filename.mp3"
-      const totalSize = uploadedFiles.reduce((acc, file) => acc + file.size, 0);
+
+
       //TODO kullanıcının kalan hakkı ile kontrol edilmesi gerekli
-      if (totalSize > MAX_TOTAL_SIZE) {
-        return res.status(400).send('Toplam dosya boyutu 100 MB\'ı aşamaz.');
+      if (totalSize > balance) {
+        return res.status(400).send('Toplam dosya boyutu kalan bakiyeniz\'i aşamaz.');
       }
       try {
         const parallelUploads3 = new Upload({
@@ -69,6 +90,7 @@ const upload = asyncHandler(async (req, res) => {
 
         const data = await parallelUploads3.done();
         return { url: data.Location, name: file.name, success: true };
+
       } catch (err) {
         console.error(`Yükleme Hatası (${file.name}):`, err);
         return { name: file.name, error: 'Yükleme sırasında bir hata oluştu.', success: false };
@@ -108,9 +130,16 @@ const upload = asyncHandler(async (req, res) => {
       successCount: successCount,
       failureCount: failureCount,
     });
-    uploadDoc.save((result) => {
+    uploadDoc.save(function (err, result) {
+      if (err) {
+        console.log("err", err)
+      }
+      else {
+        console.log("result", result)
+      }
+    });
 
-    })
+    //Update accour
 
     //Yükleme tamamlandıktan sonra bir song nesnesş oluşturulmalı
 
