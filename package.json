@@ -21,7 +21,6 @@
     "@babel/preset-react": "^7.24.7",
     "@babel/register": "^7.24.6",
     "@google-cloud/recaptcha-enterprise": "^5.11.0",
-    "aws-sdk": "^2.1691.0",
     "axios": "^1.7.5",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",

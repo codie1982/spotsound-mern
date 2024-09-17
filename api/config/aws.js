@@ -1,4 +1,5 @@
-const { S3Client } = require('@aws-sdk/client-s3');
+const { S3Client,PutObjectCommand } = require('@aws-sdk/client-s3');
+
 // AWS S3 Konfigürasyonu
 const init = () => {
     return new S3Client({
@@ -18,4 +19,4 @@ const setParam = (path, data, mimetype) => {
         ContentType: mimetype,
     }
 }
-module.exports = { init,setParam }
+module.exports = { init,setParam,PutObjectCommand }

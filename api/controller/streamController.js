@@ -4,9 +4,7 @@ const aws = require("../config/aws")
 const { Upload } = require('@aws-sdk/lib-storage'); // Upload sınıfını buradan içe aktarın
 const { v4: uuidv4 } = require('uuid');
 const ApiResponse = require("../helpers/response")
-const allowedSongsMimeTypes = require("../helpers/mimes/songmimes")
-const allowedImageMimeTypes = require("../helpers/mimes/imagesmimes")
-const allowedVideoMimeTypes = require("../helpers/mimes/videomimes")
+
 const { getFileType } = require("../calculate/fileType")
 
 const { calculateUploadBalancing, selectedSongPackage } = require("../calculate/balance")

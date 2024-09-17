@@ -5,14 +5,14 @@ const userDB = require("../dbMap/users/usersDbmap")
 const SessionModel = require("../models/connectionModel");
 
 
-const protect = asyncHandler(async (req,res,next)=>{
-let token;
-if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
+const protect = asyncHandler(async (req, res, next) => {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
         try {
             token = req.headers.authorization.split(" ")[1]
-            const decoded = jwt.verify(token,process.env.JWT_SECRET)
+            const decoded = jwt.verify(token, process.env.JWT_SECRET)
             //Get user form to token
-           
+
             req.user = await userDB.getUserInfo(decoded.id)
             next()
         } catch (error) {
@@ -21,31 +21,35 @@ if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
             throw new Error("not authorized")
         }
     }
-    if(!token){
+    if (!token) {
         res.status(401)
         throw new Error("not authorized")
     }
 })
+const testprotect = asyncHandler(async (req, res, next) => {
+    req.user = await User.findOne({ email: "engin_erol@hotmail.com" }, ["-password"])
+    next()
+})
 // Oturum kontrolü middleware'i
 async function isSessionActive(req, res, next) {
-    if(req.session.user){
+    if (req.session.user) {
         return next();
-    }else{
+    } else {
         res.redirect('/');  // Giriş sayfasına yönlendir
     }
 }
 // Oturum kontrolü middleware'i
 async function isAuthenticated(req, res, next) {
     const nSessionModel = await SessionModel.findOne({ userId: req.user.id });
-    if(nSessionModel){
+    if (nSessionModel) {
         const nw = new Date(Date.now());
         const ex = new Date(nSessionModel.expiresAt)
-        if(nw>=ex){
+        if (nw >= ex) {
             res.redirect('/');  // Giriş sayfasına yönlendir
         }
         return next();
-    }else{
+    } else {
         res.redirect('/');  // Giriş sayfasına yönlendir
     }
 }
-module.exports = { protect,isAuthenticated,isSessionActive }
+module.exports = { protect, isAuthenticated, isSessionActive, testprotect }

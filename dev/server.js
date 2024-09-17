@@ -37,7 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware
 app.use(fileUpload({
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 }));
 
 // Session middleware'i ayarlama
@@ -59,6 +59,7 @@ app.use(session({
 
 app.use("/api/v10/package", packagesRoutes)
 app.use("/api/v10/upload", uploadRoutes)
+app.use("/api/v10/stream", uploadRoutes)
 app.use("/api/v10/user", usersRoutes)
 app.use("/api/v10/verify", verifyRoutes)
 app.use("/api/v10/connection", connectionRoutes)

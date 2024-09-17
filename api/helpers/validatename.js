@@ -6,7 +6,6 @@
  * @returns {boolean} - Güvenli ise true, değilse false.
  */
 const validateFolderPath = (name) => {
-    console.log("name", name, typeof (name))
     // İzin verilen karakterler: a-z, A-Z, 0-9, /, -, _
     const regex = /^[a-zA-Z0-9-_\/]+\/$/;
     return regex.test(name);
