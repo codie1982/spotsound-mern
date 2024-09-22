@@ -1,32 +1,47 @@
+//General Library
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
+var geoip = require('geoip-lite');
+const { OAuth2Client } = require("google-auth-library");
+
+//Models
 const ConnectionModel = require("../models/connectionModel");
 const User = require("../models/userModel");
+const AccountModel = require("../models/accountModel.js");
 const Username = require("../models/usernameModel");
 const Authorizate = require("../models/authorizationModel");
+const PackageModel = require("../models/packageModel.js");
+
+//DBMap
 const usernameDb = require("../dbMap/username/usernameDb")
 const userDbmap = require("../dbMap/users/usersDbmap")
-const mailVerifyDbmap = require("../dbMap/mail/mailVerifyDbmap")
+const connectionDbmap = require("../dbMap/connection/connectionDbmap");
+
+//private library
 const generateToken = require("../library/user/generate_token")
-const mailController = require("../mail/mailController")
 const isSingleWord = require("../library/user/isSingleWord")
-const { OAuth2Client } = require("google-auth-library");
+
+//controller files
+const mailController = require("../mail/mailController")
 const getUserDataFromGoogle = require("./googleController");
-const preparedata = require("../config/preparedata")
+
+//constans
 const CONSTANT = require("../constant/users/user_constant")
-var geoip = require('geoip-lite');
-const connectionDbmap = require("../dbMap/connection/connectionDbmap")
+//helpers
+const ApiResponse = require("../helpers/response.js")
+
 const SCOPE = "https://www.googleapis.com/auth/userinfo.profile email openid"
 const redirecServertUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:5001" : "https://" + process.env.REDIRECT_SERVER_URL + "/api/users/oauth";
 const redirecUrl = process.env.NODE_ENV == "development" ? "http://127.0.0.1:3000" : "https://" + process.env.REDIRECT_URL;
 const allow_origin_url = process.env.NODE_ENV == "development" ? "http://localhost:3000" : "https://" + process.env.ALLOW_ORJIN_URL;
+
 //access private
 const getMe = asyncHandler(async (req, res) => {
   const { name, email, profileImage } = await userDbmap.getUserInfo(req.user._id)
   try {
     var data = { name, email, image: profileImage.path, }
     res.status(200)
-      .json(preparedata(data, 200, "Connection Status"))
+      .json(ApiResponse.success(data, 200, "Connection Status"))
   } catch (error) {
     console.error("Error reading data:", error);
   }
@@ -39,20 +54,20 @@ const register = asyncHandler(async (req, res) => {
     const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
 
     if (!username || !email || !password) {
-      res.status(400).json(preparedata({}, 400, "Please add all fields"))
+      res.status(400).json(ApiResponse.error({}, 400, "Please add all fields"))
     }
     if (!isSingleWord(username)) {
-      res.status(400).json(preparedata({}, 400, "Kullanıcı adı tek kelime olmalı"))
+      res.status(400).json(ApiResponse.error({}, 400, "Kullanıcı adı tek kelime olmalı"))
     }
     //check Email
     const isUserExist = await userDbmap.isUserFromEmail(email);
     if (isUserExist) {
-      res.status(400).json(preparedata({}, 400, "User Already register"));
+      res.status(400).json(ApiResponse.error({}, 400, "User Already register"));
     }
     //check Username
     const isUserNameExist = await usernameDb.find(username);
     if (isUserNameExist) {
-      res.status(400).json(preparedata(null, 400, "Username Already Exist"));
+      res.status(400).json(ApiResponse.error(null, 400, "Username Already Exist"));
     }
     //Create User
     const doc = new User();
@@ -65,6 +80,7 @@ const register = asyncHandler(async (req, res) => {
     const mUser = await doc.save()
     if (mUser) {
       const userid = mUser._id
+      //Kullancı Adı kayıt
       const newUsername = new Username({
         userid, // Bu bir ObjectId olmalı (mevcut kullanıcı ID'si)
         usernames: [
@@ -73,22 +89,39 @@ const register = asyncHandler(async (req, res) => {
           }
         ]
       });
-      // Kaydı kaydetme
       await newUsername.save();
-
+      //Kullancı Yetkileri Kayıt
       const newAuth = new Authorizate({
         userid, // Bu bir ObjectId olmalı (mevcut kullanıcı ID'si)
       })
-      //Kullanıcıyı kayıt et
-
       await newAuth.save()
+      await newUsername.save();
+      const sPackage = await PackageModel.findOne({ default_package: true, delete: false, active: true })
+      //Kullancı Yetkileri Kayıt
+      const newAccount = new AccountModel({
+        userid,
+        packages: [
+          {
+            packageid: sPackage._id,
+            masteruserid: userid,
+            sharedWith: [],
+          }
+        ]
+      })
+      await newAccount.save()
+      let isSuccess = false
       //Onay maili gönder
       mailController.mailVerify(email)
         .then((code) => {
-          res.status(201).json(preparedata({}, 201, "Kaydınız başarı ile yapıldı. Lütfen mail onay Kodunu gönderiniz."));
-        }).catch((err) => {
-          res.status(201).json(preparedata({}, 201, "Kaydınız başarı ile yapıldı. Lütfen mail onay Kodunu gönderiniz."));
+          isSuccess = true
         })
+      let message;
+      if (isSuccess) {
+        message = "Kaydınız başarı ile yapıldı. Lütfen mail onay Kodunu gönderiniz";
+      } else {
+        message = "Kaydınız başarı ile yapıldı. Ancak mail kodunuz gönderilmedi. giriş ekranından yeniden mail aktivitesini onaylayın."
+      }
+      res.status(201).json(ApiResponse.success({}, 201, "Kaydınız başarı ile yapıldı. Lütfen mail onay Kodunu gönderiniz."));
     } else {
       provider
       res.status(400);
@@ -235,7 +268,7 @@ const logout = asyncHandler(async (req, res) => {
   try {
     delete req.session['user']
     req.session.destroy(function (err) {
-      res.status(200).json(preparedata(null, 200, "user logout successful!"));
+      res.status(200).json(ApiResponse.success(null, 200, "user logout successful!"));
     });
   } catch (error) {
     console.error("Error reading data:", error);
@@ -264,7 +297,7 @@ const login = asyncHandler(async (req, res) => {
       }
       delete user._id
       delete user.profileImage._id
-      res.status(200).json(preparedata({
+      res.status(200).json(ApiResponse.success({
         ...user,
         token: userToken,
       }, 200, "user is login success"));

@@ -1,40 +1,77 @@
 const asyncHandler = require("express-async-handler");
-const bcrypt = require("bcryptjs");
-const ConnectionModel = require("../models/connectionModel");
-const jwt = require("jsonwebtoken");
-var geoip = require('geoip-lite');
-const preparedata = require("../config/preparedata")
-const checkConnection = asyncHandler(async (req, res) => {
-  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
-  //var ip = "83.66.162.84"; //Türkiye IP'si
-  //var ip = "207.97.227.239"; // Amerika IP
-  var geo = geoip.lookup(ip);
-  var language = { lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR" }
-  if (req.session.user) {
+const Song = require('../models/songModel'); // Song modelini import ediyoruz
+const ApiResponse = require('../helpers/response'); // ApiResponse utility'sini import ediyorsunuz
+// Tüm şarkıları getirme işlemi
+const getSongs = asyncHandler(async (req, res) => {
+  const songs = await Song.find().populate('genre');
 
-    const token = req.session.user.token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    if (decoded) {
-      res.status(200).json(preparedata({ token, language }, 200, "Connection Status"))
-    } else {
-      res.status(200).json(preparedata({ language }, 200, "No Connection"))
-    }
-  } else {
-    res.status(200).json(preparedata({ language }, 200, "No Connection"))
+  res.status(200).json(ApiResponse.success(songs, 200, "Songs retrieved successfully"));
+});
+
+// Tek bir şarkıyı getirme işlemi
+const getSong = asyncHandler(async (req, res) => {
+  const song = await Song.findById(req.params.id).populate('genre');
+
+  if (!song) {
+    return res.status(404).json(ApiResponse.error(404, "Song not found"));
   }
+
+  res.status(200).json(ApiResponse.success(song, 200, "Song retrieved successfully"));
 });
 
-const connectionLanguage = asyncHandler(async (req, res) => {
-  //const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress; // Kullanıcının IP adresi
-  //var ip = "83.66.162.84"; //Türkiye IP'si
-  var ip = "207.97.227.239"; // Amerika IP
-  var geo = geoip.lookup(ip);
-  console.log("geo",geo)
-  var data = { lang: geo != null ? geo.country == "TR" ? "TR" : "EN" : "TR" }
-  res.status(200).json(preparedata(data, 200, "No Connection"))
+// Yeni şarkı oluşturma işlemi
+const createSong = asyncHandler(async (req, res) => {
+  const { name, uploadid, downloadble, streamble, genre, raiting, count, like, hasLyrics } = req.body;
+
+  const song = await Song.create({
+    name,
+    uploadid,
+    downloadble,
+    streamble,
+    genre,
+    raiting,
+    count,
+    like,
+    hasLyrics,
+  });
+
+  res.status(201).json(ApiResponse.success(song, 201, "Song created successfully"));
 });
-//
+
+// Şarkı güncelleme işlemi
+const updateSong = asyncHandler(async (req, res) => {
+  const song = await Song.findById(req.params.id);
+
+  if (!song) {
+    return res.status(404).json(ApiResponse.error(404, "Song not found"));
+  }
+
+  const updatedSong = await Song.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true } // Güncellenmiş nesneyi döndür
+  );
+
+  res.status(200).json(ApiResponse.success(updatedSong, 200, "Song updated successfully"));
+});
+
+// Şarkı silme işlemi
+const deleteSong = asyncHandler(async (req, res) => {
+  const song = await Song.findById(req.params.id);
+
+  if (!song) {
+    return res.status(404).json(ApiResponse.error(404, "Song not found"));
+  }
+
+  await song.remove();
+
+  res.status(200).json(ApiResponse.success({}, 200, "Song deleted successfully"));
+});
 
 module.exports = {
-  checkConnection, connectionLanguage
+  getSongs,
+  getSong,
+  createSong,
+  updateSong,
+  deleteSong,
 };
