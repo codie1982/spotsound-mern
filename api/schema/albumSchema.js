@@ -5,7 +5,7 @@ const albumSchema = new mongoose.Schema({
     { performerid: { type: mongoose.Schema.Types.ObjectId } }
   ],
   releaseDate: { type: Date },
-  genreid: { type: mongoose.Schema.Types.ObjectId },
+  genres: [{ type: mongoose.Schema.Types.ObjectId }],
   images: [
     { imageid: { type: mongoose.Schema.Types.ObjectId } }
   ],

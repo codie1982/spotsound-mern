@@ -1,39 +1,38 @@
 const asyncHandler = require("express-async-handler");
 const Song = require('../models/songModel'); // Song modelini import ediyoruz
 const ApiResponse = require('../helpers/response'); // ApiResponse utility'sini import ediyorsunuz
-
 // Tüm şarkıları getirme işlemi
 const getSongs = asyncHandler(async (req, res) => {
-  const songs = await Song.find().populate('performers.performerid').populate('genre');
+  const songs = await Song.find().populate('genre');
+
   res.status(200).json(ApiResponse.success(songs, 200, "Songs retrieved successfully"));
 });
 
-// Tek bir şarkı getirme işlemi
+// Tek bir şarkıyı getirme işlemi
 const getSong = asyncHandler(async (req, res) => {
-  const song = await Song.findById(req.params.id).populate('performers.performerid').populate('genre');
+  const song = await Song.findById(req.params.id).populate('genre');
 
   if (!song) {
     return res.status(404).json(ApiResponse.error(404, "Song not found"));
   }
+
   res.status(200).json(ApiResponse.success(song, 200, "Song retrieved successfully"));
 });
 
 // Yeni şarkı oluşturma işlemi
 const createSong = asyncHandler(async (req, res) => {
-  const { name, uploadid, performers, downloadble,
-    streamble, genre, raiting, count, like, hasLyrics } = req.body;
+  const { name, uploadid, downloadble, streamble, genre, raiting, count, like, hasLyrics } = req.body;
 
   const song = await Song.create({
     name,
     uploadid,
-    performers,
     downloadble,
     streamble,
     genre,
     raiting,
     count,
     like,
-    hasLyrics
+    hasLyrics,
   });
 
   res.status(201).json(ApiResponse.success(song, 201, "Song created successfully"));

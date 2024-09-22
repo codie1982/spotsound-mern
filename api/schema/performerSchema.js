@@ -8,12 +8,16 @@ const performerSchema = new mongoose.Schema({
   gender: { type: String },
   country: { type: String },
   profileImage: { type: imageSchema, default: () => ({}) },  // Varsayılan değer olarak boş bir obje döner,
+  genres: [{ type: mongoose.Schema.Types.ObjectId }],
   addedby: { type: mongoose.Schema.Types.ObjectId, default: null },
   socialLinks: {
     facebook: { type: String },
     twitter: { type: String },
     instagram: { type: String }
   },
+  songs: [
+    { songid: { type: mongoose.Schema.Types.ObjectId } }
+  ],
 }, { timestamps: true });
 
 module.exports = performerSchema;

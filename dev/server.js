@@ -14,11 +14,14 @@ const blogRoutes = require("../api/routes/blogRoutes")
 const blogGalleryRoutes = require("../api/routes/blogGalleryRoutes")
 const albumGalleryRoutes = require("../api/routes/albumGalleryRoutes")
 const songRoutes = require("../api/routes/songRoutes")
+const offlineRoutes = require("../api/routes/offlineRoutes")
+const favoriteRoutes = require("../api/routes/favoriteRoutes")
 const albumRoutes = require("../api/routes/albumRoutes")
 const playlistRoutes = require("../api/routes/playlistRoutes")
 const playlistGalleryRoutes = require("../api/routes/playlistGalleryRoutes")
 const packagesRoutes = require("../api/routes/packagesRoutes")
 const genreRoutes = require("../api/routes/genreRoutes")
+const usergenreRoutes = require("../api/routes/usergenreRoutes")
 const uploadRoutes = require("../api/routes/uploadRoutes")
 const downloadRoutes = require("../api/routes/downloadRoutes")
 const usersRoutes = require("../api/routes/userRoutes")
@@ -85,10 +88,16 @@ app.use("/api/v10/song", songRoutes)
 app.use("/api/v10/playlist", playlistRoutes)
 //playlist-gallery
 app.use("/api/v10/playlist-gallery", playlistGalleryRoutes)
+//favorite
+app.use("/api/v10/favorite", favoriteRoutes)
+//offline
+app.use("/api/v10/offline", offlineRoutes)
 //packages
 app.use("/api/v10/package", packagesRoutes)
 //genre
 app.use("/api/v10/genre", genreRoutes)
+//user-genre
+app.use("/api/v10/user-genre", usergenreRoutes)
 //images
 app.use("/api/v10/upload", uploadRoutes)
 //download
