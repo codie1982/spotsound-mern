@@ -1,9 +1,9 @@
 const express = require("express")
 const route = express.Router()
-const { upload } = require("../controller/uploadController")
+const { download } = require("../controller/downloadController")
 const { protect, testprotect } = require("../middelware/authMiddelware")
 
 
-route.post("/", testprotect, upload)
+route.post("/", testprotect, download)
 
 module.exports = route

@@ -1,9 +1,16 @@
 const express = require("express")
 const route = express.Router()
-const {checkConnection,connectionLanguage} = require("../controller/connectionController")
+const { getPlaylists,
+    getPlaylist,
+    createPlaylist,
+    updatePlaylist,
+    deletePlaylist, } = require("../controller/playlistController")
 
 
-route.get("/",checkConnection)
-route.get("/language",connectionLanguage)
+route.get("/:id", getPlaylist)
+route.get("/", getPlaylists)
+route.post("/", createPlaylist)
+route.put("/", updatePlaylist)
+route.delete("/", deletePlaylist)
 
 module.exports = route

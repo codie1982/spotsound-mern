@@ -56,6 +56,7 @@ const upload = asyncHandler(async (req, res) => {
 
     const uploadPromises = uploadedFiles.map(async (file) => {
       // Dosya türü kontrolü
+      let uploadid = uuidv4();
       console.log("Bakiye  ->", balance)
       // { song: { upload: 512 }, video: { upload: -20 } }
       fileType = getFileType(file.mimetype)
@@ -108,20 +109,6 @@ const upload = asyncHandler(async (req, res) => {
         )
       } else if (fileType == IMAGE) {
         totalUploadImageFileSize += file.size;
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = IMAGE
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
       } else {
         return { name: file.name, error: 'Bşarkıları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
       }
@@ -146,12 +133,53 @@ const upload = asyncHandler(async (req, res) => {
         });
 
         const data = await parallelUploads3.done();
-
         console.log("Yükleme tamamlandı", data)
-        return { url: data.Location, name: file.name, size: file.size, success: true, objectKey, folder: folderPath };
+
+        const uploadDoc = new UploadModel({
+          userid: userid,
+          uploadid,
+          upload_type: fileType,
+          upload_size: await convertUnit(file.size, "b", "kb"), // kb olarak saklanır
+          data: data,
+          success: true,
+        });
+
+        await uploadDoc.save(
+          (err, result) => {
+            if (err) {
+              console.log("uploadDoc err", err)
+            } else {
+              console.log("uploadDoc result", result)
+            }
+          }
+        );
+
+
+        return { url: data.Location, uploadid, name: file.name, size: file.size, success: true, objectKey, folder: folderPath };
       } catch (err) {
+
+
+        const uploadDoc = new UploadModel({
+          userid: userid,
+          uploadid,
+          upload_type: fileType,
+          upload_size: await convertUnit(file.size, "b", "kb"), // kb olarak saklanır
+          data: null,
+          error: err,
+          success: false,
+        });
+
+        await uploadDoc.save(
+          (err, result) => {
+            if (err) {
+              console.log("uploadDoc err", err)
+            } else {
+              console.log("uploadDoc result", result)
+            }
+          }
+        );
         console.error(`Yükleme Hatası (${file.name}):`, err);
-        return { name: file.name, error: 'Yükleme sırasında bir hata oluştu.', success: false };
+        return { name: file.name, uploadid, error: 'Yükleme sırasında bir hata oluştu.', success: false };
       }
     })
 
@@ -174,59 +202,23 @@ const upload = asyncHandler(async (req, res) => {
       return acc
     }, { size: 0 });
     console.log("totalfilesizebyte.size", totalfilesizebyte.size)
-
-    let totalUploadFileSize = await convertUnit(totalfilesizebyte.size, "b", "kb")
-
-    const uploadDoc = new UploadModel({
-      userid: userid,
-      totalsize: (totalUploadFileSize == null || totalUploadFileSize == NaN) ? 0 : totalUploadFileSize,
-      file_count: uploadedFiles.length,
-      files: uploadedFiles.map((file) => {
-        return {
-          name: file.name,
-          size: file.size,
-          mimetype: file.mimetype
-        }
-      }),
-      successfullUploads: successfullUploads.map(result => ({
-        name: result.name,
-        url: result.url,
-        locate: result.objectKey,
-        folder: result.folder
-      })),
-      failedUploads: failedUploads.map(result => ({
-        name: result.name,
-        error: result.error
-      })),
-      successCount: successCount,
-      failureCount: failureCount,
-    });
-
-    await uploadDoc.save(
-      (err, result) => {
-        if (err) {
-          console.log("uploadDoc err", err)
-        } else {
-          console.log("uploadDoc result", result)
-        }
-      }
-    );
-
-
     //Yükleme tamamlandıktan sonra bir song nesnesi oluşturulmalı
-
+    let totalsize = await convertUnit(totalfilesizebyte.size, "b", "mb")
     return res.status(200).json(ApiResponse.success(200, 'Dosya yükleme işlemi tamamlandı.',
       {
         totalFiles: totalFiles,
+        totalUploadFileSize: totalsize.toFixed(2),
         successCount: successCount,
         failureCount: failureCount,
         successfullUploads: successfullUploads.map(result => ({
+          uploadid: result.uploadid,
           name: result.name,
           url: result.url
         })),
         failedUploads: failedUploads.map(result => ({
           name: result.name,
-          error: result.error
+          error: result.error,
+          uploadid: result.uploadid,
         }))
       }));
   } catch (error) {

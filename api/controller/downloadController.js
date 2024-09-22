@@ -17,7 +17,7 @@ const { convertUnit } = require("../calculate/convertUnit");
 
 const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB
 
-const upload = asyncHandler(async (req, res) => {
+const download = asyncHandler(async (req, res) => {
   let selectedPackage;
   const userid = req.user._id
 
@@ -235,5 +235,5 @@ const upload = asyncHandler(async (req, res) => {
 
 
 module.exports = {
-  upload
+  download
 };

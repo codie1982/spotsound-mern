@@ -1,15 +1,17 @@
 const mongoose = require("mongoose");
-const performerSchema = require("./performerSchema")
-const imageSchema = require("./imageSchema")
-const songSchema = require("./songSchema")
-const genreSchema = require("./genreSchema")
 const albumSchema = new mongoose.Schema({
   title: { type: String },
-  performer: performerSchema,
+  performers: [
+    { performerid: { type: mongoose.Schema.Types.ObjectId } }
+  ],
   releaseDate: { type: Date },
-  genre: genreSchema,
-  image: imageSchema,
-  songs: songSchema,
+  genreid: { type: mongoose.Schema.Types.ObjectId },
+  images: [
+    { imageid: { type: mongoose.Schema.Types.ObjectId } }
+  ],
+  songs: [
+    { songid: { type: mongoose.Schema.Types.ObjectId } }
+  ],
   userid: { type: mongoose.Schema.Types.ObjectId },
   active: { type: Boolean, default: true }
 }, { timestamps: true });

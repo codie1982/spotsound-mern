@@ -7,8 +7,18 @@ const MongoStore = require('connect-mongo');
 const colors = require("colors")
 const fileUpload = require('express-fileupload');
 const { connectDB } = require("../api/config/db")
+const performerRoutes = require("../api/routes/performerRoutes")
+const performerGalleryRoutes = require("../api/routes/performerGalleryRoutes")
+const blogRoutes = require("../api/routes/blogRoutes")
+const blogGalleryRoutes = require("../api/routes/blogGalleryRoutes")
+const albumGalleryRoutes = require("../api/routes/albumGalleryRoutes")
+const albumRoutes = require("../api/routes/albumRoutes")
+const playlistRoutes = require("../api/routes/playlistRoutes")
+const playlistGalleryRoutes = require("../api/routes/playlistGalleryRoutes")
 const packagesRoutes = require("../api/routes/packagesRoutes")
+const genreRoutes = require("../api/routes/genreRoutes")
 const uploadRoutes = require("../api/routes/uploadRoutes")
+const downloadRoutes = require("../api/routes/downloadRoutes")
 const usersRoutes = require("../api/routes/userRoutes")
 const verifyRoutes = require("../api/routes/verifyRoutes")
 const connectionRoutes = require("../api/routes/connectionRoutes")
@@ -28,7 +38,6 @@ const { createGzip } = require('zlib');
 const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 3000;
 connectDB()
-
 const app = express()
 app.use(cors())
 app.use(bodyParser.json());
@@ -37,7 +46,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware
 app.use(fileUpload({
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  //limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5 GB aws sunucusunun bir kerede max upload miktarı.
+  limits: { fileSize: 10 * 1024 * 1024 }, // 5 GB aws sunucusunun bir kerede max upload miktarı.
 }));
 
 // Session middleware'i ayarlama
@@ -57,13 +67,45 @@ app.use(session({
   }
 }));
 
+//performer
+app.use("/api/v10/performer", performerRoutes)
+//performer_gallery
+app.use("/api/v10/performer-gallery", performerGalleryRoutes)
+//subscribers
+
+//song
+
+//album
+app.use("/api/v10/album", albumRoutes)
+//album_gallery
+app.use("/api/v10/album-gallery", albumGalleryRoutes)
+//playlist
+app.use("/api/v10/playlist", playlistRoutes)
+//playlist-gallery
+app.use("/api/v10/playlist-gallery", playlistGalleryRoutes)
+//packages
 app.use("/api/v10/package", packagesRoutes)
+//genre
+app.use("/api/v10/genre", genreRoutes)
+//images
 app.use("/api/v10/upload", uploadRoutes)
+//download
+app.use("/api/v10/download", downloadRoutes)
+//stream
 app.use("/api/v10/stream", uploadRoutes)
+//user
 app.use("/api/v10/user", usersRoutes)
+//verify
 app.use("/api/v10/verify", verifyRoutes)
+//connection
 app.use("/api/v10/connection", connectionRoutes)
+//support
 app.use("/api/v10/support", supportRoutes)
+//blog
+app.use("/api/v10/blog", blogRoutes)
+//blog-gallery
+app.use("/api/v10/blog-gallery", blogGalleryRoutes)
+
 app.get('/sitemap.xml', (req, res) => {
   res.header('Content-Type', 'application/xml');
   res.header('Content-Encoding', 'gzip');

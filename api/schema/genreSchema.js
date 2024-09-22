@@ -1,8 +1,7 @@
 const mongoose = require("mongoose");
-const imageSchema = require("./imageSchema")
 const genreSchema = new mongoose.Schema({
-  name: { type: String },
-  image: imageSchema
+  title: { type: String },
+  image: { type: mongoose.Schema.Types.ObjectId, ref: "images" }
 }, { timestamps: true });
 
 module.exports = genreSchema;

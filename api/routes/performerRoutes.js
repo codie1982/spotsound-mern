@@ -1,8 +1,11 @@
 const express = require("express")
 const route = express.Router()
-const {checkConnection,connectionLanguage} = require("../controller/connectionController")
+const { getPerformer, createPerformer, updatePerformer, deletePerformer } = require("../controller/performerController")
 
 
-route.get("/",checkConnection)
+route.get("/:id", getPerformer)
+route.post("/", createPerformer)
+route.put("/", updatePerformer)
+route.delete("/", deletePerformer)
 
 module.exports = route
