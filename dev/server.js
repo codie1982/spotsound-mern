@@ -9,9 +9,11 @@ const fileUpload = require('express-fileupload');
 const { connectDB } = require("../api/config/db")
 const performerRoutes = require("../api/routes/performerRoutes")
 const performerGalleryRoutes = require("../api/routes/performerGalleryRoutes")
+const subscribersRoutes = require("../api/routes/subscribersRoutes")
 const blogRoutes = require("../api/routes/blogRoutes")
 const blogGalleryRoutes = require("../api/routes/blogGalleryRoutes")
 const albumGalleryRoutes = require("../api/routes/albumGalleryRoutes")
+const songRoutes = require("../api/routes/songRoutes")
 const albumRoutes = require("../api/routes/albumRoutes")
 const playlistRoutes = require("../api/routes/playlistRoutes")
 const playlistGalleryRoutes = require("../api/routes/playlistGalleryRoutes")
@@ -72,13 +74,13 @@ app.use("/api/v10/performer", performerRoutes)
 //performer_gallery
 app.use("/api/v10/performer-gallery", performerGalleryRoutes)
 //subscribers
-
-//song
-
+app.use("/api/v10/subscribers", subscribersRoutes)
 //album
 app.use("/api/v10/album", albumRoutes)
 //album_gallery
 app.use("/api/v10/album-gallery", albumGalleryRoutes)
+//song
+app.use("/api/v10/song", songRoutes)
 //playlist
 app.use("/api/v10/playlist", playlistRoutes)
 //playlist-gallery

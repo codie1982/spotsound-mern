@@ -1,12 +1,15 @@
 const express = require("express")
 const route = express.Router()
-const { addPackage, getallPackages, getallActivePackages, getPackage, deletePackage, updatePackage } = require("../controller/packagesController")
+const {
+    getPackages,
+    getPackage,
+    createPackage,
+    updatePackage,
+    deletePackage} = require("../controller/packagesController")
 
-
-route.post("/", addPackage)
-route.get("/detail", getPackage)
-route.get("/active", getallActivePackages)
-route.get("/", getallPackages)
+route.get("/", getPackages)
+route.get("/:id", getPackage)
+route.post("/", createPackage)
 route.put("/", updatePackage)
 route.delete("/", deletePackage)
 

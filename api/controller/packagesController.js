@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const { v4: uuidv4 } = require('uuid');
-const PackageModel = require("../models/packageModel")
+const Package = require("../models/packageModel")
 const ApiResponse = require("../helpers/response")
 const { validateNamePath } = require("../helpers/validatename")
 const PACKAGE_TYPE = {
@@ -9,45 +9,25 @@ const PACKAGE_TYPE = {
   STUDENT: "student",
   MAXI: "maxi",
 }
-/**
-  *  
- name: { type: String, required: true, unique: true, trim: true, minlength: 3, maxlength: 100 },
- title: { type: String, required: true, trim: true, minlength: 3, maxlength: 100 },
- description: { type: String, maxlength: 500, default: '' },
- price: {
-   amount: { type: Number, required: true, min: 0 },
-   currency: { type: String, required: true, enum: ['USD', 'EUR', 'TRY', 'GBP', 'JPY', 'AUD', 'CAD'], default: 'USD' }
- },
- features: [{ item: { type: String } }],
- category: { type: String, enum: ['free', 'basic', 'premium', 'enterprise'], required: true }
- package_content_type: { type: String, enum: ["standart", "multisubscribe", "student"] },
- limit: {
-   song: {
-     download: { type: Number, required: true, min: 0, default: 512 },
-     upload: { type: Number, required: true, min: 0, default: 512 },
-     unit: { type: String, enum: ["b", "kb", "mb", "gb"], default: "mb" },
-   },
-   video: {
-     download: { type: Number, required: true, min: 0, default: 1024 },
-     upload: { type: Number, required: true, min: 0, default: 1024 },
-     unit: { type: String, required: true, enum: ["b", "kb", "mb", "gb"], default: "mb" },
-   },
- },
- duration: {
-   unlimited: { type: Boolean, default: false },
-   time: { type: Number, required: true, min: 1, default: 30 },
-   interval: { type: String, enum: ['day', 'month', 'year'], required: true, default: "day" },
- },// Default: 30 day
- isRenewable: { type: Boolean, default: true },
- renewalPrice: { type: Number, default: null, min: 0 }, // If null, use original price
- discount: { type: Number, min: 0, max: 100, default: 0 }, // Percentage discount
- sales_channel: { type: String, enum: ["google"] }, // google apple ve huawei şeklinde artacak.
- product_id: { type: String, default: "" }, //ürün IDsi hangi satış kanalı ile satış yapılacaksa o satış kanalının paket için vereceği ürün id'si
- default_package: { type: Boolean, default: false },
- delete: { type: Boolean, default: false },
- status: { type: String, enum: ['active', 'inactive', 'archived'], default: 'active' },
- */
-const addPackage = asyncHandler(async (req, res) => {
+const getPackages = asyncHandler(async (req, res) => {
+  try {
+    const packages = await PackageModel.find({ delete: false, active: true }, (["-delete", "-active", "-google_channel", "-appel_channel"]))
+    if (packages.length > 0) {
+      const _packages = packages.map(package => {
+        delete package.google_channel
+        delete package.appel_channel
+        return package
+      })
+      return res.status(200).json(ApiResponse.success(200, 'Uygun paket listesi.', _packages));
+    } else {
+      return res.status(200).json(ApiResponse.error(404, 'herhangi bir paket tanımlı değil.', {}));
+    }
+  } catch (error) {
+    console.error('Genel Hata:', err);
+    return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
+  }
+});
+const createPackage = asyncHandler(async (req, res) => {
   const { name, title, description, amount, currency, category,
     uploadsonglimit, uploadvideolimit, downloadsonglimit, downloadvideolimit, unit,
     package_content_type,
@@ -131,45 +111,7 @@ const addPackage = asyncHandler(async (req, res) => {
     return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
   }
 });
-const getallPackages = asyncHandler(async (req, res) => {
-  try {
-    const packages = await PackageModel.find({ delete: false }, (["-delete", "-active", "-google_channel", "-appel_channel"]))
-    if (packages.length > 0) {
-      const _packages = packages.map(package => {
-        delete package.google_channel
-        delete package.appel_channel
-        return package
-      })
-      return res.status(200).json(ApiResponse.success(200, 'Uygun paket listesi.', _packages));
-    } else {
-      return res.status(200).json(ApiResponse.error(404, 'herhangi bir paket tanımlı değil.', {}));
-    }
-  } catch (error) {
-    console.error('Genel Hata:', err);
-    return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
-  }
-});
-const getallActivePackages = asyncHandler(async (req, res) => {
-  try {
-    const packages = await PackageModel.find({ delete: false, active: true }, (["-delete", "-active"]))
 
-    if (packages.length > 0) {
-      const _packages = packages.map(package => {
-        delete package.google_channel
-        delete package.apple_channel
-        return package
-      })
-
-      return res.status(200).json(ApiResponse.success(200, 'Dosya yükleme işlemi tamamlandı.', _packages));
-    } else {
-      return res.status(404).json(ApiResponse.error(404, 'Kriterlere uyan bir paket tanımlı değil.', {}));
-    }
-
-  } catch (error) {
-    console.error('Genel Hata:', err);
-    return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
-  }
-});
 const getPackage = asyncHandler(async (req, res) => {
   const { name } = req.query
   if (!validateNamePath(name))
@@ -186,52 +128,43 @@ const getPackage = asyncHandler(async (req, res) => {
     return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
   }
 });
+// Paket silme işlemi
 const deletePackage = asyncHandler(async (req, res) => {
-  const { uploadtype } = req.body
+  const package = await Package.findById(req.params.id);
 
-  try {
-    return res.status(200).json(ApiResponse.success(200, 'Dosya yükleme işlemi tamamlandı.',
-      {
-        totalFiles: totalFiles,
-        successCount: successCount,
-        failureCount: failureCount,
-        successfulUploads: successfulUploads.map(result => ({
-          name: result.name,
-          url: result.url
-        })),
-        failedUploads: failedUploads.map(result => ({
-          name: result.name,
-          error: result.error
-        }))
-      }));
-  } catch (error) {
-    console.error('Genel Hata:', err);
-    return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
+  if (!package) {
+    return res.status(404).json(ApiResponse.error(404, "Package not found"));
   }
+
+  await package.remove();
+
+  res.status(200).json(ApiResponse.success({}, 200, "Package deleted successfully"));
 });
+// Paket güncelleme işlemi
 const updatePackage = asyncHandler(async (req, res) => {
-  const { uploadtype } = req.body
+  const package = await Package.findById(req.params.id);
 
-  try {
-    return res.status(200).json(ApiResponse.success(200, 'Dosya yükleme işlemi tamamlandı.',
-      {
-        totalFiles: totalFiles,
-        successCount: successCount,
-        failureCount: failureCount,
-        successfulUploads: successfulUploads.map(result => ({
-          name: result.name,
-          url: result.url
-        })),
-        failedUploads: failedUploads.map(result => ({
-          name: result.name,
-          error: result.error
-        }))
-      }));
-  } catch (error) {
-    console.error('Genel Hata:', err);
-    return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error: err.message }));
+  if (!package) {
+    return res.status(404).json(ApiResponse.error(404, "Package not found"));
   }
+
+  const updatedPackage = await Package.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true } // Güncellenmiş nesneyi döndür
+  );
+
+  res.status(200).json(ApiResponse.success(updatedPackage, 200, "Package updated successfully"));
 });
+
+
+
+
 module.exports = {
-  addPackage, getallPackages, getPackage, deletePackage, updatePackage, getallActivePackages, PACKAGE_TYPE
+  getPackages,
+  getPackage,
+  createPackage,
+  updatePackage,
+  deletePackage,
 };
+

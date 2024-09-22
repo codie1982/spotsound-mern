@@ -1,7 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Song = require('../models/songModel'); // Song modelini import ediyoruz
-const asyncHandler = require('express-async-handler');
-const ApiResponse = require('../utils/ApiResponse'); // ApiResponse utility'sini import ediyorsunuz
+const ApiResponse = require('../helpers/response'); // ApiResponse utility'sini import ediyorsunuz
 
 // Tüm şarkıları getirme işlemi
 const getSongs = asyncHandler(async (req, res) => {

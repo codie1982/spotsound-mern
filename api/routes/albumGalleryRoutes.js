@@ -5,7 +5,6 @@ const {getAlbumGallery,
     updateAlbumGallery,
     deleteAlbumGallery, } = require("../controller/albumGalleryController")
 
-
 route.get("/:id", getAlbumGallery)
 route.post("/", createAlbumGallery)
 route.put("/", updateAlbumGallery)

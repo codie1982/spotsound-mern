@@ -1,8 +1,7 @@
 const asyncHandler = require("express-async-handler");
-const bcrypt = require("bcryptjs");
 const PerformerGallery = require("../models/performerGalleryModel");
 const ApiResponse = require("../helpers/response")
-// Tüm performer galerilerini getirme işlemi
+
 const getPerformerGalleries = asyncHandler(async (req, res) => {
   const performerGalleries = await PerformerGallery.find();
 
@@ -22,20 +21,14 @@ const getPerformerGallery = asyncHandler(async (req, res) => {
 
 // Yeni performer galerisi oluşturma işlemi
 const createPerformerGallery = asyncHandler(async (req, res) => {
-  const { userid, performerid, images } = req.body;
-
-  // images listesi uploadid kullanarak oluşturuluyor
-  const imagesList = images.map(image => ({
-    type: image.type || 'internal',
-    userid: image.userid || null,
-    path: image.path || '',
-    uploadid: image.uploadid || null,
-  }));
+  const { userid, performerid, profil, cover, gallery } = req.body;
 
   const performerGallery = await PerformerGallery.create({
     userid,
     performerid,
-    images: imagesList
+    profil,
+    cover,
+    gallery
   });
 
   res.status(201).json(ApiResponse.success(performerGallery, 201, "Performer gallery created successfully"));
@@ -49,21 +42,9 @@ const updatePerformerGallery = asyncHandler(async (req, res) => {
     return res.status(404).json(ApiResponse.error(404, "Performer gallery not found"));
   }
 
-  // images listesi güncelleniyor
-  const updatedImages = req.body.images.map(image => ({
-    type: image.type || 'internal',
-    userid: image.userid || null,
-    path: image.path || '',
-    uploadid: image.uploadid || null,
-  }));
-
   const updatedPerformerGallery = await PerformerGallery.findByIdAndUpdate(
     req.params.id,
-    {
-      userid: req.body.userid || performerGallery.userid,
-      performerid: req.body.performerid || performerGallery.performerid,
-      images: updatedImages.length ? updatedImages : performerGallery.images
-    },
+    req.body,
     { new: true } // Güncellenmiş nesneyi döndür
   );
 
