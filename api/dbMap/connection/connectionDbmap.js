@@ -1,9 +1,8 @@
-const ConnectionModel = require("../../models/connectionModel")
+const ConnectionModel = require("../../models/sessionModel")
 const saveConnection = (geo, ip, userAgent, deviceType, appType, sessionid, token, userid) => {
     return new Promise((resolve, reject) => {
       try {
         const doc = new ConnectionModel();
-        doc.sessionid = sessionid;
         doc.token = token;
         doc.ipAddress = ip;
         doc.userId = userid;

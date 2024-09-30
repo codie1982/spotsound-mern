@@ -2,41 +2,40 @@ const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const Performer = require("../models/performerModel");
 const Song = require('../models/songModel'); // Song modelini import ediyoruz
-const PerformerGalery = require("../models/performerGalleryModel");
+const PerformerGallery = require("../models/performerGalleryModel");
 const ApiResponse = require("../helpers/response")
 
 // Tüm performans sanatçılarını getirme işlemi
 const getPerformers = asyncHandler(async (req, res) => {
-  const performers = await Performer.find().populate('genres'); // genres alanını doldurur
-
-  res.status(200).json(ApiResponse.success(performers, 200, "Performers retrieved successfully"));
+  const performers = await Performer.find({ performer_delete: false, performer_active: true }).populate('genres'); // genres alanını doldurur
+  let msg = "Performers retrieved successfully";
+  if (performers.length == 0) {
+    msg = "there is no performer"
+  }
+  res.status(200).json(ApiResponse.success(200, msg, performers));
 });
 
 // Performans sanatçısı, genres, songs, ve gallery bilgilerini getirme işlemi
 const getPerformer = asyncHandler(async (req, res) => {
   // Performans sanatçısını bulma
-  const performer = await Performer.findById(req.params.id).populate('genres');
+  let performerid = req.params.id
+  const performer = await Performer.findById(performerid).populate('genres');
 
   if (!performer) {
     return res.status(404).json(ApiResponse.error(404, "Performer not found"));
   }
-
-  // Performans sanatçısının şarkılarını bulma
-  const songs = await Song.find({ 'performers.performerid': performer._id });
-
   // Performans sanatçısının galerisini bulma
   const gallery = await PerformerGallery.findOne({ performerid: performer._id });
-
   // Tüm veriler toplanıyor ve response olarak gönderiliyor
   res.status(200).json(ApiResponse.success({
     performer,
-    songs,
     gallery
   }, 200, "Performer details retrieved successfully"));
 });
 
 // Yeni performans sanatçısı ve galerisi oluşturma işlemi
 const createPerformer = asyncHandler(async (req, res) => {
+
   const {
     name,
     sortname,
@@ -44,7 +43,6 @@ const createPerformer = asyncHandler(async (req, res) => {
     birthdate,
     gender,
     country,
-    profileImage,
     genres,
     addedby,
     socialLinks,
@@ -63,7 +61,6 @@ const createPerformer = asyncHandler(async (req, res) => {
     birthdate,
     gender,
     country,
-    profileImage,
     genres,
     addedby,
     socialLinks,
@@ -110,11 +107,26 @@ const deletePerformer = asyncHandler(async (req, res) => {
     return res.status(404).json(ApiResponse.error(404, "Performer not found"));
   }
 
+  await Performer.findByIdAndUpdate(
+    req.params.id,
+    { performer_delete: true, performer_active: false },
+    { new: true } // Güncellenmiş nesneyi döndür
+  );
+
+  res.status(200).json(ApiResponse.success({}, 200, "Performer deleted successfully"));
+});
+// Performans sanatçısını silme işlemi
+const forcePerformer = asyncHandler(async (req, res) => {
+  const performer = await Performer.findById(req.params.id);
+
+  if (!performer) {
+    return res.status(404).json(ApiResponse.error(404, "Performer not found"));
+  }
+
   await performer.remove();
 
   res.status(200).json(ApiResponse.success({}, 200, "Performer deleted successfully"));
 });
-
 
 //----------Performer GENRE ---------------//
 // Performans sanatçısının tüm müzik türlerini getirme işlemi
@@ -277,6 +289,7 @@ module.exports = {
   createPerformer,
   updatePerformer,
   deletePerformer,
+  forcePerformer,
   getPerformerGenre,
   addPerformerGenre,
   updatePerformerGenre,

@@ -5,6 +5,7 @@ const { getPerformers,
     createPerformer,
     updatePerformer,
     deletePerformer,
+    forcePerformer,
     getPerformerGenre,
     addPerformerGenre,
     updatePerformerGenre,
@@ -13,13 +14,15 @@ const { getPerformers,
     addPerformerSong,
     updatePerformerSong,
     removePerformerSong, } = require("../controller/performerController")
+const { testprotect, protect, isAuthenticated, isSessionActive } = require("../middelware/authMiddelware")
 
 
-route.get("/", getPerformers)
-route.get("/:id", getPerformer)
-route.post("/", createPerformer)
-route.put("/", updatePerformer)
-route.delete("/", deletePerformer)
+route.get("/", testprotect, getPerformers)
+route.get("/:id", testprotect, getPerformer)
+route.post("/", testprotect, createPerformer)
+route.put("/:id", testprotect, updatePerformer)
+route.delete("/:id", testprotect, deletePerformer)
+route.delete("/force/:id", testprotect, forcePerformer)
 
 route.get("/:id/genre", getPerformerGenre)
 route.post("/:id/genre", addPerformerGenre)

@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
-const ConnectionModel = require("../models/connectionModel");
+const ConnectionModel = require("../models/sessionModel");
 const User = require("../models/userModel");
 const Username = require("../models/usernameModel");
 const Authorizate = require("../models/authorizationModel");

@@ -1,239 +1,261 @@
 
 const asyncHandler = require("express-async-handler");
+const axios = require("axios")
 const aws = require("../config/aws")
-const { Upload } = require('@aws-sdk/lib-storage'); // Upload sınıfını buradan içe aktarın
 const { v4: uuidv4 } = require('uuid');
 const ApiResponse = require("../helpers/response")
 
 const { getFileType } = require("../calculate/fileType")
 
-const { calculateUploadBalancing, selectedSongPackage } = require("../calculate/balance")
-const UploadModel = require("../models/uploadModel")
-const UploadUsageModel = require("../models/uploadUsageModel")
+const { calculateDownloadBalancing, selectedSongPackage } = require("../calculate/balance")
 
+const Song = require("../models/songModel")
+const Upload = require("../models/uploadModel")
+const StreamUsage = require("../models/streamUsageModel")
+const StreamProgress = require("../models/streamProgressModel")
 const { getFolderPath, sanitizeFileName, SONG, IMAGE, VIDEO } = require('../helpers/folder'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
 const { validateFolderPath } = require('../helpers/validatename'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
 const { convertUnit } = require("../calculate/convertUnit");
 
-const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB
+const createStreamProgress = asyncHandler(async (req, res) => {
+  const userid = req.user._id;
+  const { songid } = req.body
 
-const upload = asyncHandler(async (req, res) => {
-  let selectedPackage;
-  const userid = req.user._id
+  // UUID oluşturma (her stream için benzersiz)
+  const streamuuid = uuidv4();
 
-  let _progress = 0;
+  const song = await Song.findById(songid)
   try {
-    if (!req.files || !req.files.files) {
-      return res.status(400).json(ApiResponse.error(400, 'Hiçbir dosya yüklenmedi.'));
-    }
-    let uploadedFiles = req.files.files;
-    // Eğer tek dosya yüklendiyse, onu diziye çevir
-    if (!Array.isArray(uploadedFiles)) {
-      uploadedFiles = [uploadedFiles];
-    }
-    const balance = await calculateUploadBalancing(userid) //bakiyesi balance.song,balance.video
-    selectedPackage = await selectedSongPackage(userid) //bakiyesi balance.song,balance.video
-    console.log("selectedPackage", selectedPackage)
-    if (selectedPackage == null) {
-      return res.status(400).json(ApiResponse.error(400, 'Bu işlemi yapmak için geçerli bir paketin bulunmuyor..'));
-    }
-
-    // Klasör yolunu doğrulama
-
-    let totalUploadSongFileSize;
-    let totalUploadVideoFileSize;
-    let totalUploadImageFileSize;
-    let fileType = '';
-
-    // Başarı ve Hata Sayısını Hesaplama
-    let totalFiles;
-    let successfullUploads
-    let failedUploads
-    let successCount
-    let failureCount
-
-    const uploadPromises = uploadedFiles.map(async (file) => {
-      // Dosya türü kontrolü
-      console.log("Bakiye  ->", balance)
-      // { song: { upload: 512 }, video: { upload: -20 } }
-      fileType = getFileType(file.mimetype)
-      console.log("fileType", fileType)
-      if (fileType == null) return { name: file.name, error: 'Desteklenmeyen dosya türü.', success: false };
-
-      if (fileType == SONG) {
-        if (balance.song.upload <= 0) {
-          return { name: file.name, error: 'Bu ses dosyası için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        if (convertUnit(file.size, "b", "mb") > balance.song.upload) {
-          return { name: file.name, error: 'Bu şarkıları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        totalUploadSongFileSize += file.size;
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = SONG
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
-      } else if (fileType == VIDEO) {
-        if (balance.video.upload <= 0) {
-          return { name: file.name, error: 'Bu video dosyası için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        totalUploadVideoFileSize += file.size;
-        if (convertUnit(file.size, "b", "mb") > balance.video.upload) {
-          return { name: file.name, error: 'videoları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = VIDEO
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
-      } else if (fileType == IMAGE) {
-        totalUploadImageFileSize += file.size;
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = IMAGE
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
-      } else {
-        return { name: file.name, error: 'Bşarkıları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
-      }
-      const folderPath = getFolderPath(fileType, userid); // Örneğin: "song/66e82db61a4393764befb6b1/"
-      //console.log("folderPath", folderPath)
-      const uniqueFileName = `${uuidv4()}-${sanitizeFileName(file.name)}`;
-      //console.log("uniqueFileName", uniqueFileName)
-      const objectKey = `${folderPath.concat(uniqueFileName)}`; // Örneğin: "music/66e82db61a4393764befb6b1/uuid-filename.mp3"
-      //console.log("objectKey", objectKey)
-      if (folderPath && !validateFolderPath(folderPath)) {
-        return { name: file.name, error: 'Geçersiz klasör yolu.', success: false };
-      }
-
-      try {
-        const parallelUploads3 = new Upload({
-          client: aws.init(),
-          params: aws.setParam(objectKey, file.data, file.mimetype),
-        });
-        parallelUploads3.on('httpUploadProgress', async (progress) => {
-          console.log(`Yükleme ilerlemesi (${file.name}): ${progress.loaded} / ${progress.total}`);
-          _progress = progress.loaded
-        });
-
-        const data = await parallelUploads3.done();
-
-        console.log("Yükleme tamamlandı", data)
-        return { url: data.Location, name: file.name, size: file.size, success: true, objectKey, folder: folderPath };
-      } catch (err) {
-        console.error(`Yükleme Hatası (${file.name}):`, err);
-        return { name: file.name, error: 'Yükleme sırasında bir hata oluştu.', success: false };
-      }
-    })
-
-    const uploadResults = await Promise.all(uploadPromises);
-    if (!uploadResults) return res.status(400).json(ApiResponse.error(500, 'Yükleme hatası.', { error }));
-
-    // Başarı ve Hata Sayısını Hesaplama
-    totalFiles = uploadResults.length;
-    successfullUploads = uploadResults.filter(result => result.success);
-    failedUploads = uploadResults.filter(result => !result.success);
-    successCount = successfullUploads.length;
-    failureCount = failedUploads.length;
-
-    // Geri Bildirim JSON'u Oluşturma
-    const totalfilesizebyte = uploadResults.reduce((acc, file) => {
-      if (file.success) {
-        acc.size += file.size
-        return acc
-      }
-      return acc
-    }, { size: 0 });
-    console.log("totalfilesizebyte.size", totalfilesizebyte.size)
-
-    let totalUploadFileSize = await convertUnit(totalfilesizebyte.size, "b", "kb")
-
-    const uploadDoc = new UploadModel({
-      userid: userid,
-      totalsize: (totalUploadFileSize == null || totalUploadFileSize == NaN) ? 0 : totalUploadFileSize,
-      file_count: uploadedFiles.length,
-      files: uploadedFiles.map((file) => {
-        return {
-          name: file.name,
-          size: file.size,
-          mimetype: file.mimetype
-        }
-      }),
-      successfullUploads: successfullUploads.map(result => ({
-        name: result.name,
-        url: result.url,
-        locate: result.objectKey,
-        folder: result.folder
-      })),
-      failedUploads: failedUploads.map(result => ({
-        name: result.name,
-        error: result.error
-      })),
-      successCount: successCount,
-      failureCount: failureCount,
-    });
-
-    await uploadDoc.save(
-      (err, result) => {
-        if (err) {
-          console.log("uploadDoc err", err)
-        } else {
-          console.log("uploadDoc result", result)
-        }
-      }
-    );
-
-
-    //Yükleme tamamlandıktan sonra bir song nesnesi oluşturulmalı
-
-    return res.status(200).json(ApiResponse.success(200, 'Dosya yükleme işlemi tamamlandı.',
+    // Kullanıcının bu şarkıdaki mevcut ilerlemesini bul veya yeni bir kayıt oluştur
+    const streamProgress = new StreamProgress(
       {
-        totalFiles: totalFiles,
-        successCount: successCount,
-        failureCount: failureCount,
-        successfullUploads: successfullUploads.map(result => ({
-          name: result.name,
-          url: result.url
-        })),
-        failedUploads: failedUploads.map(result => ({
-          name: result.name,
-          error: result.error
-        }))
-      }));
+        userid,
+        songid,
+        streamuuid,
+        totalDuration: song.metadata.duration,
+        lastUpdated: Date.now()
+      },
+    );
+    let savedStreamProgress = await streamProgress.save()
+    if (savedStreamProgress) {
+      return res.status(200).json(ApiResponse.success(200, 'Stream progress saved', { id: streamUUID }));
+    }
+    return res.status(400).json(ApiResponse.success(400, 'no stream Progress', {}));
+
+  } catch (error) {
+    console.error('Error saving stream progress:', error);
+    return res.status(500).json(ApiResponse.error(500, 'Error saving stream progress', { error }));
+  }
+});
+
+const stream = asyncHandler(async (req, res) => {
+  const userid = req.user._id
+  const { songid, filetype,
+    deviceId, deviceModel,
+    osVersion, appVersion, platform, streamuuid
+  } = req.body
+  let newDevice = {
+    deviceId,
+    deviceModel,
+    osVersion,
+    platform,
+    appVersion,
+    ipAddress: req.ip, // Opsiyonel: Cihazın IP adresi
+    // Ek cihaz bilgileri
+  };
+
+  try {
+    if (!streamuuid) {
+      return res.status(400).json(ApiResponse.error(400, "there is no streamuuid"));
+    }
+    const streamProgress = await StreamProgress.findOne({ streamuuid })
+    // Dosya türü kontrolü
+    if (!filetype || (filetype !== SONG && filetype !== VIDEO)) {
+      return res.status(400).json(ApiResponse.error(400, "Unsupported file type"));
+    }
+    if (filetype == SONG) {
+      //Şarkı indirme işlemleri için
+      const song = await Song.findById(songid)
+      if (!song) return res.status(404).json(ApiResponse.error(404, "Song not found"));
+      const upload = await Upload.findOne({ uploadid: song.uploadid });
+      if (!upload) return res.status(404).json(ApiResponse.error(404, "File not found"));
+      if (!song.streamble) return res.status(403).json(ApiResponse.error(403, "This song cannot be streamed"));
+      //paylaşılamaz ise özel kullanıma uygun dur. 
+      if (!song.canBeShared && upload.userid.toString() !== userid.toString()) {
+        return res.status(403).json(ApiResponse.error(403, "This song is private"));
+      }
+
+      // Lisans süresi kontrolü (varsa ve dolmuşsa)
+      if (song.copyrightInfo && song.copyrightInfo.expirationDate) {
+        if (new Date() > song.copyrightInfo.expirationDate) {
+          return res.status(403).json(ApiResponse.error(403, "The license for this song has expired"));
+        }
+      }
+
+      // AWS veya S3'den dosya bilgilerini al
+
+      // Kullanıcının mevcut paketini ve limitlerini al
+      const selectedPackage = await selectedSongPackage(userid);
+      if (!selectedPackage) {
+        return res.status(400).json(ApiResponse.error(400, "You do not have an active package"));
+      }
+      // Bakiye kontrolü
+      /* const balance = await calculateDownloadBalancing(userid);
+      let upload_unit = upload.upload_unit != null ? upload.upload_unit : "kb"
+
+      if (convertUnit(upload.upload_size, upload_unit, "mb") > balance.song.download) {
+        return res.status(403).json(ApiResponse.error(403, "Insufficient balance for this download"));
+      } */
+      // AWS'den dosyayı indirme işlemi
+      const fileKey = upload.data.Key; // S3 key'i
+      // const data = await aws.init.send(new aws.GetObjectCommand(aws.setStreamParam(fileKey)));
+      // İlk stream kaydını yapıyoruz ve _id'yi alıyoruz
+      const streamUsageId = await createStreamUsage(
+        userid, songid, deviceId, platform, osVersion, appVersion, req.ip
+      );
+      // Toplu güncelleme için belirli bir zaman aralığı
+      const intervalId = setInterval(async () => {
+        if (bufferStreamedBytes > 0) {
+          await updateStreamUsage(streamUsageId, bufferStreamedBytes);
+          bufferStreamedBytes = 0;
+        }
+      }, 30000); // 30 saniyede bir güncelleme
+
+      // Asenkron olarak imzalı URL oluşturma (örn. 1 saat geçerli)
+      const signedUrl = await aws.generateSignedUrl(fileKey, 3600); // 1 saat geçerli imzalı URL
+      const range = req.headers.range;
+      const options = { method: 'GET', url: signedUrl, responseType: 'stream' };
+      //const AWS = aws.init()
+      //const data = await AWS.send(new aws.GetObjectCommand(aws.setStreamParam(fileKey)));
+      if (range) {
+        options.headers = { Range: range }; // Eğer range header varsa, parçalı istek yapılır
+      }
+      const s3Response = await axios(options); // İmzalı URL'den dosyayı çek
+      const total = s3Response.headers['content-length'];
+      let streamedBytes = 0; // Stream edilen byte miktarını takip edeceğimiz değişken
+      let bufferThreshold = 10000000; // 2MB (örnek eşik değeri)
+      let bufferStreamedBytes = 0; // Toplam buffer'da tutulan veri
+
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : total - 1;
+        const chunkSize = (end - start) + 1;
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${total}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunkSize,
+          'Content-Type': s3Response.headers['content-type']
+        });
+      } else {
+        res.writeHead(200, {
+          'Content-Length': total,
+          'Content-Type': s3Response.headers['content-type']
+        });
+      }
+      // Stream edilen veri miktarını ölç
+      s3Response.data.on('data', async (chunk) => {
+        streamedBytes += chunk.length;
+        bufferStreamedBytes += chunk.length;
+        // Eğer bufferThreshold (örneğin 10MB) geçildiyse veritabanına kaydet
+        if (bufferStreamedBytes >= bufferThreshold) {
+          await updateStreamUsage(streamUsageId, bufferThreshold);
+          bufferStreamedBytes = 0; // Buffer'ı sıfırla
+        }
+      });
+      s3Response.data.pipe(res);
+
+      s3Response.data.on('end', async () => {
+        console.log(`Stream completed. Total streamed bytes: ${streamedBytes}`);
+        if (bufferStreamedBytes > 0) {
+          await updateStreamUsage(streamUsageId, bufferStreamedBytes);
+        }
+        clearInterval(intervalId); // Stream sona erdiğinde interval'ı temizle
+      });
+
+      s3Response.data.on('error', (err) => {
+
+        clearInterval(intervalId); // Hata durumunda interval'ı temizle
+        console.error('Stream error:', err);
+        return res.status(500).json(ApiResponse.error(500, "Stream error", { err }));
+      });
+    }
   } catch (error) {
     console.error('Genel Hata:', error);
     return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error }));
   }
 });
+const createStreamUsage = async (userid, songid, deviceId, platform, osVersion, appVersion, ipAddress) => {
+  const streamUsage = new StreamUsage({
+    userid: userid,
+    songid: songid,
+    deviceId: deviceId,
+    platform: platform,
+    osVersion: osVersion,
+    appVersion: appVersion,
+    ipAddress: ipAddress,
+    streamedBytes: 0 // Başlangıçta 0
+  });
 
+  const savedStreamUsage = await streamUsage.save();
+  return savedStreamUsage._id; // Kaydedilen `_id`yi döndür
+};
+// Bu fonksiyon veritabanına asenkron olarak güncellemeleri kaydeder
+const updateStreamUsage = async (streamUsageId, bufferStreamedBytes) => {
+  await StreamUsage.findByIdAndUpdate(
+    streamUsageId,
+    { $inc: { streamedBytes: bufferStreamedBytes }, lastStreamedAt: Date.now() },
+    { new: true }
+  );
+};
+const saveStreamProgress = asyncHandler(async (req, res) => {
+  const userid = req.user._id;
+  const { streamuuid, currentPosition, totalDuration } = req.body;
 
+  try {
+    // Kullanıcının bu şarkıdaki mevcut ilerlemesini bul veya yeni bir kayıt oluştur
+    const streamProgress = await StreamProgress.findOneAndUpdate(
+      { streamuuid },
+      {
+        currentPosition,
+        totalDuration,
+        lastUpdated: Date.now()
+      },
+      { new: true } // Kayıt yoksa oluştur
+    );
+
+    return res.status(200).json(ApiResponse.success(200, 'Stream progress saved', streamProgress));
+  } catch (error) {
+    console.error('Error saving stream progress:', error);
+    return res.status(500).json(ApiResponse.error(500, 'Error saving stream progress', { error }));
+  }
+});
+
+const streamFromLastPosition = asyncHandler(async (req, res) => {
+  const userid = req.user._id;
+  const { streamuuid } = req.body;
+  try {
+    // Kullanıcının bu şarkı için kaydedilen ilerlemesini al
+    const streamProgress = await StreamProgress.findOne({ streamuuid });
+
+    if (!streamProgress) {
+      // Eğer ilerleme kaydedilmediyse, şarkıyı baştan başlat
+      return res.status(200).json(ApiResponse.success(200, 'Starting stream from beginning', { startPosition: 0 }));
+    }
+
+    // Eğer ilerleme kaydedildiyse, o noktadan başlat
+    return res.status(200).json(ApiResponse.success(200, 'Resuming stream from saved position', { startPosition: streamProgress.currentPosition }));
+  } catch (error) {
+    console.error('Error retrieving stream progress:', error);
+    return res.status(500).json(ApiResponse.error(500, 'Error retrieving stream progress', { error }));
+  }
+});
+
+const secondToByte = (bitrate, second) => {
+  const bytesPerSecond = (bitrate * 1000) / 8; // Bitrate'ten byte hesaplama (bps -> Bps)
+  return Math.floor(bytesPerSecond * second);  // Byte cinsinden pozisyonu hesapla
+};
 module.exports = {
-  upload
+  stream, saveStreamProgress, streamFromLastPosition, createStreamProgress
 };

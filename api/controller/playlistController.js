@@ -23,14 +23,14 @@ const getPlaylist = asyncHandler(async (req, res) => {
 
 // Yeni playlist oluşturma işlemi
 const createPlaylist = asyncHandler(async (req, res) => {
-  const { name, description, createdBy, songlist, active } = req.body;
-
+  const { name, description, createdBy, active } = req.body;
+let userid = req.user._id
   const playlist = await Playlist.create({
     name,
     description,
     createdBy,
-    songlist,
     active,
+    userid
   });
 
   res.status(201).json(ApiResponse.success(playlist, 201, "Playlist created successfully"));

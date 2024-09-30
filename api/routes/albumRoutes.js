@@ -1,10 +1,11 @@
 const express = require("express")
 const route = express.Router()
-const {  getAlbums,
+const { getAlbums,
     getAlbum,
     createAlbum,
     updateAlbum,
     deleteAlbum,
+    softDeleteAlbum,
     getAlbumGenre,
     addAlbumGenre,
     updateAlbumGenre,
@@ -17,28 +18,30 @@ const {  getAlbums,
     addAlbumSong,
     updateAlbumSong,
     removeAlbumSong, } = require("../controller/albumController")
-const { protect, isAuthenticated, isSessionActive } = require("../middelware/authMiddelware")
+const { testprotect, isAuthenticated, isSessionActive } = require("../middelware/authMiddelware")
 
-route.get("/:id", getAlbum)
-route.get("/", getAlbums)
-route.post("/", createAlbum)
+route.get("/all", getAlbums)
+route.get("/", getAlbum)
+route.post("/", testprotect, createAlbum)
 route.put("/", updateAlbum)
 route.delete("/", deleteAlbum)
-
-route.get("/:id/genre", getAlbumGenre)
-route.post("/:id/genre", addAlbumGenre)
-route.put("/:id/genre", updateAlbumGenre)
-route.delete("/:id/genre", removeAlbumGenre)
-
-route.get("/:id/performer", getAlbumPerformer)
-route.post("/:id/performer", addAlbumPerformer)
-route.put("/:id/performer", updateAlbumPerformer)
-route.delete("/:id/performer", removeAlbumPerformer)
+route.delete("/soft", softDeleteAlbum)
 
 
-route.get("/:id/song", getAlbumSong)
-route.post("/:id/song", addAlbumSong)
-route.put("/:id/song", updateAlbumSong)
-route.delete("/:id/song", removeAlbumSong)
+route.get("/genre", getAlbumGenre)
+route.post("/genre", addAlbumGenre)
+route.put("/genre", updateAlbumGenre)
+route.delete("/genre",testprotect, removeAlbumGenre)
+
+route.get("/performer", getAlbumPerformer)
+route.post("/performer", addAlbumPerformer)
+route.put("/performer", updateAlbumPerformer)
+route.delete("/performer", removeAlbumPerformer)
+
+
+route.get("/song", getAlbumSong)
+route.post("/song", addAlbumSong)
+route.put("/song", updateAlbumSong)
+route.delete("/song", removeAlbumSong)
 
 module.exports = route

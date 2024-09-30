@@ -2,18 +2,21 @@ const mongoose = require("mongoose");
 const albumSchema = new mongoose.Schema({
   title: { type: String },
   performers: [
-    { performerid: { type: mongoose.Schema.Types.ObjectId } }
+    { performerid: { type: mongoose.Schema.Types.ObjectId, ref: "performers" } }
   ],
   releaseDate: { type: Date },
-  genres: [{ type: mongoose.Schema.Types.ObjectId }],
+  genres: [
+    { genreid: { type: mongoose.Schema.Types.ObjectId, ref: "genre" } }
+  ],
   images: [
-    { imageid: { type: mongoose.Schema.Types.ObjectId } }
+    { imageid: { type: mongoose.Schema.Types.ObjectId, ref: "images" } }
   ],
   songs: [
-    { songid: { type: mongoose.Schema.Types.ObjectId } }
+    { songid: { type: mongoose.Schema.Types.ObjectId,ref:"songs" } }
   ],
   userid: { type: mongoose.Schema.Types.ObjectId },
-  active: { type: Boolean, default: true }
+  isactive: { type: Boolean, default: true },
+  isdelete: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = albumSchema;

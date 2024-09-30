@@ -1,239 +1,168 @@
 
 const asyncHandler = require("express-async-handler");
 const aws = require("../config/aws")
-const { Upload } = require('@aws-sdk/lib-storage'); // Upload sınıfını buradan içe aktarın
 const { v4: uuidv4 } = require('uuid');
 const ApiResponse = require("../helpers/response")
 
 const { getFileType } = require("../calculate/fileType")
 
-const { calculateUploadBalancing, selectedSongPackage } = require("../calculate/balance")
-const UploadModel = require("../models/uploadModel")
-const UploadUsageModel = require("../models/uploadUsageModel")
+const { calculateDownloadBalancing, selectedSongPackage } = require("../calculate/balance")
 
+const Song = require("../models/songModel")
+const Upload = require("../models/uploadModel")
+const UploadUsageModel = require("../models/uploadUsageModel")
+const DownloadUsage = require("../models/downloadUsageModel")
+const Download = require("../models/downloadModel")
+const DOWNLOAD_START = "start"
+const DOWNLOAD_FINISH = "finish"
 const { getFolderPath, sanitizeFileName, SONG, IMAGE, VIDEO } = require('../helpers/folder'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
 const { validateFolderPath } = require('../helpers/validatename'); // Klasör yolunu belirleme fonksiyonunu içe aktarın
 const { convertUnit } = require("../calculate/convertUnit");
 
-const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB
 
 const download = asyncHandler(async (req, res) => {
-  let selectedPackage;
+
   const userid = req.user._id
+  const { songid, filetype,
+    deviceId, deviceModel,
+    osVersion, appVersion, platform,
+    ipAddress, deviceBrand,
+    osType, screenSize, tvType, networkType, isWifi, isMobile, ssid, bssid } = req.body
 
-  let _progress = 0;
+
+
+  let newDevice = {
+    deviceId,
+    deviceModel,
+    osVersion,
+    platform,
+    appVersion,
+    ipAddress, // Opsiyonel: Cihazın IP adresi
+    networkInfo: { isWifi, isMobile, networkType },
+    wifiInfo: { ssid, bssid },
+    // TV cihazları için ek alanlar
+    deviceBrand, // TV'nin markası (Samsung, LG vs.)
+    osType, // TV'nin işletim sistemi (Tizen, WebOS, Android TV)
+    screenSize, // TV'nin ekran boyutu (55 inches vs.)
+    tvType, //: { type: String, enum: ['Smart TV', 'Android TV', 'Other'] } // TV türü
+    status: DOWNLOAD_START
+  }
   try {
-    if (!req.files || !req.files.files) {
-      return res.status(400).json(ApiResponse.error(400, 'Hiçbir dosya yüklenmedi.'));
-    }
-    let uploadedFiles = req.files.files;
-    // Eğer tek dosya yüklendiyse, onu diziye çevir
-    if (!Array.isArray(uploadedFiles)) {
-      uploadedFiles = [uploadedFiles];
-    }
-    const balance = await calculateUploadBalancing(userid) //bakiyesi balance.song,balance.video
-    selectedPackage = await selectedSongPackage(userid) //bakiyesi balance.song,balance.video
-    console.log("selectedPackage", selectedPackage)
-    if (selectedPackage == null) {
-      return res.status(400).json(ApiResponse.error(400, 'Bu işlemi yapmak için geçerli bir paketin bulunmuyor..'));
+    // Dosya türü kontrolü
+    if (!filetype || (filetype !== SONG && filetype !== VIDEO)) {
+      return res.status(400).json(ApiResponse.error(400, "Unsupported file type"));
     }
 
-    // Klasör yolunu doğrulama
 
-    let totalUploadSongFileSize;
-    let totalUploadVideoFileSize;
-    let totalUploadImageFileSize;
-    let fileType = '';
+    if (filetype == SONG) {
+      //Şarkı indirme işlemleri için
+      const song = await Song.findById(songid)
+      if (!song) return res.status(404).json(ApiResponse.error(404, "Song not found"));
 
-    // Başarı ve Hata Sayısını Hesaplama
-    let totalFiles;
-    let successfullUploads
-    let failedUploads
-    let successCount
-    let failureCount
+      if (!song.downloadble) return res.status(404).json(ApiResponse.error(404, "this song can not downloadble"));
+      let upload = await Upload.findOne({ uploadid: song.uploadid })
+      if (!upload) {
+        return res.status(404).json(ApiResponse.error(404, "File not found"));
+      }
+      
+      //paylaşılamaz ise özel kullanıma uygun dur. 
+      if (!song.canBeShared && upload.userid != userid)
+        return res.status(404).json(ApiResponse.error(404, "this song is private"));
 
-    const uploadPromises = uploadedFiles.map(async (file) => {
-      // Dosya türü kontrolü
-      console.log("Bakiye  ->", balance)
-      // { song: { upload: 512 }, video: { upload: -20 } }
-      fileType = getFileType(file.mimetype)
-      console.log("fileType", fileType)
-      if (fileType == null) return { name: file.name, error: 'Desteklenmeyen dosya türü.', success: false };
+      // Lisans süresi kontrolü (varsa ve dolmuşsa)
+      if (song.copyrightInfo && song.copyrightInfo.expirationDate) {
+        if (new Date() > song.copyrightInfo.expirationDate) {
+          return res.status(403).json(ApiResponse.error(403, "The license for this song has expired"));
+        }
+      }
+      // Kullanıcının mevcut paketini ve limitlerini al
+      const selectedPackage = await selectedSongPackage(userid);
+      if (!selectedPackage) {
+        return res.status(400).json(ApiResponse.error(400, "You do not have an active package"));
+      }
 
-      if (fileType == SONG) {
-        if (balance.song.upload <= 0) {
-          return { name: file.name, error: 'Bu ses dosyası için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        if (convertUnit(file.size, "b", "mb") > balance.song.upload) {
-          return { name: file.name, error: 'Bu şarkıları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        totalUploadSongFileSize += file.size;
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = SONG
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
-      } else if (fileType == VIDEO) {
-        if (balance.video.upload <= 0) {
-          return { name: file.name, error: 'Bu video dosyası için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        totalUploadVideoFileSize += file.size;
-        if (convertUnit(file.size, "b", "mb") > balance.video.upload) {
-          return { name: file.name, error: 'videoları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
-        }
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = VIDEO
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
-      } else if (fileType == IMAGE) {
-        totalUploadImageFileSize += file.size;
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = IMAGE
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
+     
+      // İndirme limiti kontrolü (cihaz limiti dahil)
+      const downloadRecord = await Download.findOne({ uploadid: songid });
+      if (downloadRecord && downloadRecord.devices.length >= selectedPackage.limit.song.maxDevices) {
+        return res.status(403).json(ApiResponse.error(403, "Device limit exceeded"));
+      }
+      // Bakiye kontrolü
+      const balance = await calculateDownloadBalancing(userid);
+      let upload_unit = upload.upload_unit != null ? upload.upload_unit : "kb"
+
+      if (convertUnit(upload.upload_size, upload_unit, "mb") > balance.song.download) {
+        return res.status(403).json(ApiResponse.error(403, "Insufficient balance for this download"));
+      }
+      // Cihaz kaydını güncelleme
+      const downloadUUID = uuidv4();
+      if (!downloadRecord) {
+        const newDownloadRecord = new Download({
+          uploadid: song.uploadid,
+          downloadid: downloadUUID,
+          userid,
+          devices: [newDevice]
+        });
+        await newDownloadRecord.save();
       } else {
-        return { name: file.name, error: 'Bşarkıları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
-      }
-      const folderPath = getFolderPath(fileType, userid); // Örneğin: "song/66e82db61a4393764befb6b1/"
-      //console.log("folderPath", folderPath)
-      const uniqueFileName = `${uuidv4()}-${sanitizeFileName(file.name)}`;
-      //console.log("uniqueFileName", uniqueFileName)
-      const objectKey = `${folderPath.concat(uniqueFileName)}`; // Örneğin: "music/66e82db61a4393764befb6b1/uuid-filename.mp3"
-      //console.log("objectKey", objectKey)
-      if (folderPath && !validateFolderPath(folderPath)) {
-        return { name: file.name, error: 'Geçersiz klasör yolu.', success: false };
+        downloadRecord.devices.push(newDevice);
+        await downloadRecord.save();
       }
 
-      try {
-        const parallelUploads3 = new Upload({
-          client: aws.init(),
-          params: aws.setParam(objectKey, file.data, file.mimetype),
-        });
-        parallelUploads3.on('httpUploadProgress', async (progress) => {
-          console.log(`Yükleme ilerlemesi (${file.name}): ${progress.loaded} / ${progress.total}`);
-          _progress = progress.loaded
-        });
+    }
 
-        const data = await parallelUploads3.done();
-
-        console.log("Yükleme tamamlandı", data)
-        return { url: data.Location, name: file.name, size: file.size, success: true, objectKey, folder: folderPath };
-      } catch (err) {
-        console.error(`Yükleme Hatası (${file.name}):`, err);
-        return { name: file.name, error: 'Yükleme sırasında bir hata oluştu.', success: false };
-      }
-    })
-
-    const uploadResults = await Promise.all(uploadPromises);
-    if (!uploadResults) return res.status(400).json(ApiResponse.error(500, 'Yükleme hatası.', { error }));
-
-    // Başarı ve Hata Sayısını Hesaplama
-    totalFiles = uploadResults.length;
-    successfullUploads = uploadResults.filter(result => result.success);
-    failedUploads = uploadResults.filter(result => !result.success);
-    successCount = successfullUploads.length;
-    failureCount = failedUploads.length;
-
-    // Geri Bildirim JSON'u Oluşturma
-    const totalfilesizebyte = uploadResults.reduce((acc, file) => {
-      if (file.success) {
-        acc.size += file.size
-        return acc
-      }
-      return acc
-    }, { size: 0 });
-    console.log("totalfilesizebyte.size", totalfilesizebyte.size)
-
-    let totalUploadFileSize = await convertUnit(totalfilesizebyte.size, "b", "kb")
-
-    const uploadDoc = new UploadModel({
-      userid: userid,
-      totalsize: (totalUploadFileSize == null || totalUploadFileSize == NaN) ? 0 : totalUploadFileSize,
-      file_count: uploadedFiles.length,
-      files: uploadedFiles.map((file) => {
-        return {
-          name: file.name,
-          size: file.size,
-          mimetype: file.mimetype
-        }
-      }),
-      successfullUploads: successfullUploads.map(result => ({
-        name: result.name,
-        url: result.url,
-        locate: result.objectKey,
-        folder: result.folder
-      })),
-      failedUploads: failedUploads.map(result => ({
-        name: result.name,
-        error: result.error
-      })),
-      successCount: successCount,
-      failureCount: failureCount,
-    });
-
-    await uploadDoc.save(
-      (err, result) => {
-        if (err) {
-          console.log("uploadDoc err", err)
-        } else {
-          console.log("uploadDoc result", result)
-        }
-      }
-    );
-
-
-    //Yükleme tamamlandıktan sonra bir song nesnesi oluşturulmalı
-
-    return res.status(200).json(ApiResponse.success(200, 'Dosya yükleme işlemi tamamlandı.',
-      {
-        totalFiles: totalFiles,
-        successCount: successCount,
-        failureCount: failureCount,
-        successfullUploads: successfullUploads.map(result => ({
-          name: result.name,
-          url: result.url
-        })),
-        failedUploads: failedUploads.map(result => ({
-          name: result.name,
-          error: result.error
-        }))
-      }));
+    // AWS'den dosyayı indirme işlemi
+    const fileKey = upload.data.Key; // S3 key'i
+    const data = await aws.init.send(new GetObjectCommand(aws.setDownloadParam(fileKey)));
+    res.setHeader('Content-Type', data.ContentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileKey.split('/').pop()}"`);
+    res.setHeader('Download-UUID', downloadUUID); // Header'da UUID gönder
+    // Dosyayı kullanıcıya gönder
+    data.Body.pipe(res);
   } catch (error) {
     console.error('Genel Hata:', error);
     return res.status(500).json(ApiResponse.error(500, 'Sunucu hatası.', { error }));
   }
 });
 
+const download_complete = asyncHandler(async (req, res) => {
+  const userid = req.user._id
+  const { downloaduuid, deviceid } = req.body
+
+  // İndirme kaydını UUID'ye göre bul
+  const download = await Download.findOne({ downloadid: downloaduuid });
+  if (!download) {
+    return res.status(400).json(ApiResponse.error(400, "Download record not found"));
+  }
+  // Cihazın doğru olup olmadığını kontrol et
+  const device = download.devices.find(device => device.deviceId === deviceid);
+  if (!device) {
+    return res.status(400).json(ApiResponse.error(400, "Device not authorized for this download"));
+  }
+  device.status = 'DOWNLOAD_FINISH';
+  // İndirme kaydını kaydet
+  await download.save();
+
+
+  // İndirme bilgilerini güncelle veya oluştur
+  const downloadUsage = await DownloadUsage.findOneAndUpdate(
+    { userid: download.userid, uploadid: download.uploadid },
+    {
+      $inc: {
+        count: 1, // İndirme sayısını artır
+        download_size: convertUnit(download.download_size, download.download_unit || "kb", "kb") // İndirme boyutunu ekle (kb cinsinden)
+      }
+    },
+    { new: true, upsert: true } // Eğer daha önce kaydedilmediyse yeni kayıt oluştur
+  );
+  res.status(200).json(ApiResponse.success(200, "Download confirmed and updated successfully", downloadUsage));
+
+});
+/**
+ *   // İndirme bilgilerini kayıt altına alma
+   
+ */
 
 module.exports = {
-  download
+  download, download_complete
 };

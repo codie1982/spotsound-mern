@@ -1,26 +1,29 @@
 const express = require("express")
 const route = express.Router()
-const { 
+const { testprotect, protect, isAuthenticated, isSessionActive } = require("../middelware/authMiddelware")
+
+const {
     getPlaylists,
     getPlaylist,
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
+    
     getPlaylistSong,
     addPlaylistSong,
     updatePlaylistSong,
     removePlaylistSong, } = require("../controller/playlistController")
 
 
-route.get("/:id", getPlaylist)
-route.get("/", getPlaylists)
-route.post("/", createPlaylist)
-route.put("/", updatePlaylist)
-route.delete("/", deletePlaylist)
+route.get("/", testprotect, getPlaylist)
+route.get("/", testprotect, getPlaylists)
+route.post("/", testprotect, createPlaylist)
+route.put("/", testprotect, updatePlaylist)
+route.delete("/", testprotect, deletePlaylist)
 
 
-route.get("/:id/song", getPlaylistSong)
-route.post("/:id/song", addPlaylistSong)
-route.put("/:id/song", updatePlaylistSong)
-route.delete("/:id/song", removePlaylistSong)
+route.get("/:id/song",testprotect, getPlaylistSong)
+route.post("/:id/song",testprotect, addPlaylistSong)
+route.put("/:id/song",testprotect, updatePlaylistSong)
+route.delete("/:id/song",testprotect, removePlaylistSong)
 module.exports = route

@@ -1,30 +1,66 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const Album = require("../models/albumModel");
-const ApiResponse = require("../helpers/response")
+const Song = require("../models/songModel");
+const Performer = require("../models/performerModel");
+const ApiResponse = require("../helpers/response");
+const { default: mongoose } = require("mongoose");
 
 // Tüm albümleri getirme işlemi
 const getAlbums = asyncHandler(async (req, res) => {
-  const albums = await Album.find().populate('performers.performerid').populate('genres').populate('songs.songid').populate('images.imageid');
+  const page = parseInt(req.query.page) || 1; // Varsayılan sayfa 1
+  const limit = parseInt(req.query.limit) || 5; // Varsayılan limit 5
 
-  res.status(200).json(ApiResponse.success(albums, 200, "Albums retrieved successfully"));
+  const totalAlbums = await Album.countDocuments({ delete_album: false, active: true });
+  const albums = await Album.find(
+    { delete_album: false, active: true }
+  )
+    .skip((page - 1) * limit) // Sayfalama
+    .limit(limit) // Limit
+    .populate({ path: 'performers.performerid' })
+    .populate({
+      path: "genres.genreid", populate: "image"
+    })
+    .populate('images.imageid')
+    .populate('songs.songid');
+
+  res.status(200).json(ApiResponse.success(200, "Albums retrieved successfully",
+    {
+      totalAlbums, // Toplam albüm sayısı
+      currentPage: page,
+      totalPages: Math.ceil(totalAlbums / limit),
+      albums
+    }
+  ));
 });
 
 // Tek bir albüm getirme işlemi
 const getAlbum = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id).populate('performers.performerid').populate('genres').populate('songs.songid').populate('images.imageid');
+  const albumid = req.query.albumid
+  const album = await Album.findById(albumid)
+    .populate({ path: 'performers.performerid' })
+    .populate({
+      path: "genres.genreid", populate: "image"
+    })
+    .populate('images.imageid')
+    .populate('songs.songid');
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  res.status(200).json(ApiResponse.success(album, 200, "Album retrieved successfully"));
+  res.status(200).json(ApiResponse.success(200, "Album retrieved successfully", album));
 });
 
 // Yeni albüm oluşturma işlemi
 const createAlbum = asyncHandler(async (req, res) => {
-  const { title, performers, releaseDate, genres, images, songs, userid, active } = req.body;
-
+  let userid = req.user._id
+  const { title, releaseDate, active } = req.body;
+  // Performers, Songs ve Images dizilerini dinamik olarak alıyoruz
+  const performers = extractArrayFromBody(req.body, 'performers');
+  const songs = extractArrayFromBody(req.body, 'songs');
+  const images = extractArrayFromBody(req.body, 'images');
+  const genres = extractArrayFromBody(req.body, 'genres');
   const album = await Album.create({
     title,
     performers,
@@ -35,13 +71,13 @@ const createAlbum = asyncHandler(async (req, res) => {
     userid,
     active
   });
-
-  res.status(201).json(ApiResponse.success(album, 201, "Album created successfully"));
+  res.status(201).json(ApiResponse.success(201, "Album created successfully", album));
 });
 
 // Albüm güncelleme işlemi
 const updateAlbum = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  const albumid = req.query.albumid
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
@@ -58,7 +94,8 @@ const updateAlbum = asyncHandler(async (req, res) => {
 
 // Albüm silme işlemi
 const deleteAlbum = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  const albumid = req.query.albumid
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
@@ -66,40 +103,63 @@ const deleteAlbum = asyncHandler(async (req, res) => {
 
   await album.remove();
 
-  res.status(200).json(ApiResponse.success({}, 200, "Album deleted successfully"));
+  res.status(200).json(ApiResponse.success(200, "Album deleted successfully", {}));
 });
+// Albüm silme işlemi
+const softDeleteAlbum = asyncHandler(async (req, res) => {
+  const albumid = req.query.albumid
+  const album = await Album.findById(albumid);
 
+  if (!album) {
+    return res.status(404).json(ApiResponse.error(404, "Album not found"));
+  }
+
+  await Album.findByIdAndUpdate(
+    req.params.id,
+    { delete_album: true, active: false }
+  );
+
+  res.status(200).json(ApiResponse.success(200, "Album deleted successfully", {}));
+});
 //----------------------------Genre -----------------//
 
 // Albümün tüm müzik türlerini getirme işlemi
 const getAlbumGenre = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id).populate('genres');
+  const albumid = req.query.albumid
+  const album = await Album.findById(albumid)
+    .populate({
+      path: 'genres.genreid',  // Genre'yi populate et
+      populate: { path: 'image' } // Genre'nin altındaki image'ı da populate et
+    });
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  res.status(200).json(ApiResponse.success(album.genres, 200, "Album genres retrieved successfully"));
+  res.status(200).json(ApiResponse.success(200, "Album genres retrieved successfully", album.genres));
 });
 
 // Albüme yeni bir müzik türü ekleme işlemi
 const addAlbumGenre = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  let albumid = req.query.albumid
+  if (!albumid) return res.status(404).json(ApiResponse.error(404, "Album id not found"));
+
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
-
   // Eklenmek istenen müzik türü genreid ile geliyor
   const { genreid } = req.body;
-
   // Eğer müzik türü zaten eklenmişse hata döndür
-  if (album.genres.includes(genreid)) {
-    return res.status(400).json(ApiResponse.error(400, "Genre already exists for this album"));
+  for (let i = 0; i < album.genres.length; i++) {
+    const existingGenreId = album.genres[i].genreid ? album.genres[i].genreid.toString() : null;
+    if (existingGenreId === genreid) {
+      return res.status(400).json(ApiResponse.error(400, "Genre already exists for this album"));
+    }
   }
-
   // Müzik türünü ekle
-  album.genres.push(genreid);
+  album.genres.push({ genreid: mongoose.Types.ObjectId(genreid) });
   await album.save();
 
   res.status(200).json(ApiResponse.success(album.genres, 200, "Genre added to album successfully"));
@@ -107,7 +167,8 @@ const addAlbumGenre = asyncHandler(async (req, res) => {
 
 // Albümdeki bir müzik türünü güncelleme işlemi
 const updateAlbumGenre = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  let albumid = req.query.albumid
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
@@ -115,9 +176,13 @@ const updateAlbumGenre = asyncHandler(async (req, res) => {
 
   const { oldGenreid, newGenreid } = req.body;
 
-  // Eğer eski müzik türü albümde yoksa hata döndür
-  if (!album.genres.includes(oldGenreid)) {
-    return res.status(400).json(ApiResponse.error(400, "Old genre does not exist for this album"));
+  // Eğer müzik türü zaten eklenmişse hata döndür
+  for (let i = 0; i < album.genres.length; i++) {
+    const existingGenreId = album.genres[i].genreid ? album.genres[i].genreid.toString() : null;
+
+    if (existingGenreId !== oldGenreid) {
+      return res.status(400).json(ApiResponse.error(400, "Genre already exists for this album"));
+    }
   }
 
   // Eski müzik türünü yeni müzik türüyle değiştir
@@ -129,49 +194,78 @@ const updateAlbumGenre = asyncHandler(async (req, res) => {
 
 // Albümden bir müzik türü silme işlemi
 const removeAlbumGenre = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  let albumid = req.query.albumid;
+  let genreid = req.query.genreid
+  if (!genreid) {
+    return res.status(400).json(ApiResponse.error(400, "Genre ID not provided"));
+  }
 
+  // Albüm verisini alıyoruz
+  const album = await Album.findById(albumid);
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  const { genreid } = req.body;
-
-  // Eğer silinmek istenen müzik türü albümde yoksa hata döndür
-  if (!album.genres.includes(genreid)) {
-    return res.status(400).json(ApiResponse.error(400, "Genre does not exist for this album"));
+  // genreid'nin albümde olup olmadığını kontrol etme
+  let genreExists = false;
+  for (let i = 0; i < album.genres.length; i++) {
+    const existingGenreId = album.genres[i].genreid ? album.genres[i].genreid.toString() : null;
+    if (existingGenreId === genreid) {
+      genreExists = true;
+      break;
+    }
   }
 
-  // Müzik türünü listeden çıkar
-  album.genres = album.genres.filter(genre => !genre.equals(genreid));
+  if (!genreExists) {
+    return res.status(400).json(ApiResponse.error(400, "Genre does not exist on this album"));
+  }
+
+  // Müzik türünü listeden çıkarıyoruz
+  album.genres = album.genres.filter(genre => {
+    // Eğer genreid tanımlı değilse veya eşleşiyorsa, diziden çıkar
+    if (!genre.genreid || genre.genreid.toString() === genreid) {
+      return false; // Bu elemanı diziden çıkar
+    }
+    // Aksi takdirde dizide tut
+    return true;
+  });
   await album.save();
 
-  res.status(200).json(ApiResponse.success(album.genres, 200, "Album genre removed successfully"));
+  res.status(200).json(ApiResponse.success(200, "Album genre removed successfully", album.genres));
 });
 
 
 //------------------- Album Performer -------------------
 // Albümün tüm performans sanatçılarını getirme işlemi
 const getAlbumPerformer = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id).populate('performers.performerid');
+  let albumid = req.query.albumid
+  const album = await Album.findById(albumid)
+    .populate({
+      path: "performers.performerid",
+      populate: "songs.songid"
+    });
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  res.status(200).json(ApiResponse.success(album.performers, 200, "Album performers retrieved successfully"));
+  res.status(200).json(ApiResponse.success(200, "Album performers retrieved successfully", album.performers));
 });
 
 // Albüme yeni bir performans sanatçısı ekleme işlemi
 const addAlbumPerformer = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  let albumid = req.body.albumid
+  let performerid = req.body.performerid
+  // Eklenmek istenen performans sanatçısı performerid ile geliyor
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  // Eklenmek istenen performans sanatçısı performerid ile geliyor
-  const { performerid } = req.body;
+  const addPerformer = await Performer.findById(performerid)
+  if (!addPerformer)
+    return res.status(404).json(ApiResponse.error(404, "Performer not found"));
 
   // Eğer performans sanatçısı zaten eklenmişse hata döndür
   if (album.performers.some(performer => performer.performerid.equals(performerid))) {
@@ -211,13 +305,13 @@ const updateAlbumPerformer = asyncHandler(async (req, res) => {
 
 // Albümden bir performans sanatçısını silme işlemi
 const removeAlbumPerformer = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
-
+  const { albumid, performerid } = req.query;
+  const album = await Album.findById(albumid);
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  const { performerid } = req.body;
+
 
   // Eğer silinmek istenen performans sanatçısı albümde yoksa hata döndür
   if (!album.performers.some(performer => performer.performerid.equals(performerid))) {
@@ -233,31 +327,30 @@ const removeAlbumPerformer = asyncHandler(async (req, res) => {
 //----------------------- Album Song --------------------
 // Albümün tüm şarkılarını getirme işlemi
 const getAlbumSong = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id).populate('songs.songid');
+  let { albumid } = req.query
+  const album = await Album.findById(albumid).populate('songs.songid');
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
-
   res.status(200).json(ApiResponse.success(album.songs, 200, "Album songs retrieved successfully"));
 });
 
 // Albüme yeni bir şarkı ekleme işlemi
 const addAlbumSong = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  let {albumid,songid} = req.body
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
 
-  // Eklenmek istenen şarkı songid ile geliyor
-  const { songid } = req.body;
-
+   const isSong = await Song.findById(songid)
+   if(!isSong) return res.status(404).json(ApiResponse.error(404, "Song not found"));
   // Eğer şarkı zaten eklenmişse hata döndür
   if (album.songs.some(song => song.songid.equals(songid))) {
     return res.status(400).json(ApiResponse.error(400, "Song already exists for this album"));
   }
-
   // Şarkıyı ekle
   album.songs.push({ songid });
   await album.save();
@@ -291,13 +384,12 @@ const updateAlbumSong = asyncHandler(async (req, res) => {
 
 // Albümden bir şarkıyı silme işlemi
 const removeAlbumSong = asyncHandler(async (req, res) => {
-  const album = await Album.findById(req.params.id);
+  let {albumid,songid} = req.query
+  const album = await Album.findById(albumid);
 
   if (!album) {
     return res.status(404).json(ApiResponse.error(404, "Album not found"));
   }
-
-  const { songid } = req.body;
 
   // Eğer silinmek istenen şarkı albümde yoksa hata döndür
   if (!album.songs.some(song => song.songid.equals(songid))) {
@@ -310,13 +402,27 @@ const removeAlbumSong = asyncHandler(async (req, res) => {
 
   res.status(200).json(ApiResponse.success(album.songs, 200, "Song removed from album successfully"));
 });
+// Dinamik dizileri okuma fonksiyonu
+const extractArrayFromBody = (body, fieldName) => {
+  const resultArray = [];
+  let index = 0;
 
+  while (body[`${fieldName}[${index}][${fieldName.slice(0, -1)}id]`]) {
+    resultArray.push({
+      [`${fieldName.slice(0, -1)}id`]: body[`${fieldName}[${index}][${fieldName.slice(0, -1)}id]`]
+    });
+    index++;
+  }
+
+  return resultArray;
+};
 module.exports = {
   getAlbums,
   getAlbum,
   createAlbum,
   updateAlbum,
   deleteAlbum,
+  softDeleteAlbum,
   getAlbumGenre,
   addAlbumGenre,
   updateAlbumGenre,

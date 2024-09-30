@@ -1,6 +1,7 @@
 
 require("dotenv").config()
 const path = require('path');
+const compression = require('compression');
 const express = require("express")
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
@@ -24,10 +25,12 @@ const genreRoutes = require("../api/routes/genreRoutes")
 const usergenreRoutes = require("../api/routes/usergenreRoutes")
 const uploadRoutes = require("../api/routes/uploadRoutes")
 const downloadRoutes = require("../api/routes/downloadRoutes")
+const streamRoutes = require("../api/routes/streamRoutes")
 const usersRoutes = require("../api/routes/userRoutes")
 const verifyRoutes = require("../api/routes/verifyRoutes")
 const connectionRoutes = require("../api/routes/connectionRoutes")
 const supportRoutes = require("../api/routes/supportRoutes")
+const authortyRoutes = require("../api/routes/authortyRoutes")
 const { errorHandler } = require("../api/middelware/errorHandler")
 
 
@@ -47,8 +50,10 @@ const app = express()
 app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); // Form-data verisini almak için
 app.use(express.static(path.join(__dirname, 'public')));
-
+// GZIP sıkıştırmasını etkinleştir
+app.use(compression());
 // Middleware
 app.use(fileUpload({
   //limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5 GB aws sunucusunun bir kerede max upload miktarı.
@@ -56,7 +61,7 @@ app.use(fileUpload({
 }));
 
 // Session middleware'i ayarlama
-app.use(session({
+/* app.use(session({
   secret: process.env.SESSION_SECRET_KEY,  // Güçlü ve gizli bir anahtar belirleyin
   resave: false,  // Oturum verisi değişmediği sürece oturumu yeniden kaydetme
   saveUninitialized: true,  // Boş oturumları kaydetme
@@ -71,7 +76,9 @@ app.use(session({
     maxAge: 14 * 24 * 60 * 60 * 1000  // Çerez süresi (milisaniye cinsinden)
   }
 }));
-
+ */
+//user
+app.use("/api/v10/users", usersRoutes)
 //performer
 app.use("/api/v10/performer", performerRoutes)
 //performer_gallery
@@ -103,9 +110,8 @@ app.use("/api/v10/upload", uploadRoutes)
 //download
 app.use("/api/v10/download", downloadRoutes)
 //stream
-app.use("/api/v10/stream", uploadRoutes)
-//user
-app.use("/api/v10/user", usersRoutes)
+app.use("/api/v10/stream", streamRoutes)
+
 //verify
 app.use("/api/v10/verify", verifyRoutes)
 //connection
@@ -116,6 +122,9 @@ app.use("/api/v10/support", supportRoutes)
 app.use("/api/v10/blog", blogRoutes)
 //blog-gallery
 app.use("/api/v10/blog-gallery", blogGalleryRoutes)
+//ROLES
+app.use("/api/v10/authorization-roles", authortyRoutes)
+
 
 app.get('/sitemap.xml', (req, res) => {
   res.header('Content-Type', 'application/xml');

@@ -1,7 +1,8 @@
 
 const mongoose = require("mongoose");
 const AccountModel = require("../models/accountModel")
-const UploadUsageModel = require("../models/uploadUsageModel")
+const UploadUsage = require("../models/uploadUsageModel")
+const DownloadUsage = require("../models/downloadUsageModel")
 const PackageModel = require("../models/packageModel")
 const { isvalidityPeriod } = require("./validity_period_of_the_package")
 const { convertUnit } = require("./convertUnit");
@@ -10,6 +11,17 @@ const { SONG, VIDEO } = require("../helpers/folder");
 const calculateUploadBalancing = async (userid) => {
     const userAccount = await AccountModel.findOne({ userid })
     const reminding = await calculateUserTotalUploadLimit(userAccount, userid)
+    return { song: reminding.song, video: reminding.video }
+}
+
+const calculateDownloadBalancing = async (userid) => {
+    const userAccount = await AccountModel.findOne({ userid })
+    const reminding = await calculateUserTotalDownloadLimit(userAccount, userid)
+    return { song: reminding.song, video: reminding.video }
+}
+const calculateStreamBalancing = async (userid) => {
+    const userAccount = await AccountModel.findOne({ userid })
+    const reminding = await calculateUserTotalDownloadLimit(userAccount, userid)
     return { song: reminding.song, video: reminding.video }
 }
 const selectedSongPackage = async (userid) => {
@@ -89,6 +101,108 @@ async function calculateUserTotalUploadLimit(userAccount, userid) {
 
     return user_remind;
 }
+async function calculateUserTotalDownloadLimit(userAccount, userid) {
+    const user_remind = {
+        song: {
+            download: 0,
+        },
+        video: {
+            download: 0,
+        }
+    };
+    // Asenkron işlemler için for...of döngüsü kullanıyoruz
+    for (const package of userAccount.packages) {
+        const packageid = package.packageid;
+
+        try {
+            const package_detail = await getPackageDetail(packageid);
+            console.log("package_detail", package_detail)
+            // Eğer paket sahibi kendisi ise
+            if (package.masteruserid.toString() === userid.toString()) {
+                const isValid = await isvalidityPeriod(package_detail, package.createdAt);
+                if (isValid) {
+                    const songDownloadLimit = await convertUnit(package_detail.limit.song.download, package_detail.limit.song.unit, "mb");
+                    console.log("paketin verdiği toplam song indirme limiti ->mb", songDownloadLimit)
+                    const videoDownloadLimit = await convertUnit(package_detail.limit.video.download, package_detail.limit.video.unit, "mb");
+                    console.log("paketin verdiği toplam video indirme limiti ->mb", videoDownloadLimit)
+                    const totalusage = await calculateTotalDownloadSize(packageid, "mb");
+                    console.log("paketin pakete ait song için toplam indirme kullanımı ->mb", totalusage.song)
+                    console.log("paketin pakete ait video için toplam indirme kullanımı ->mb", totalusage.video)
+                    if (totalusage.length != 0) {
+                        user_remind.song.download += calculateReminding(songDownloadLimit, totalusage.song);
+                        user_remind.video.download += calculateReminding(videoDownloadLimit, totalusage.video);
+                    } else {
+                        user_remind.song.download += songDownloadLimit;
+                        user_remind.video.download += videoDownloadLimit;
+                    }
+                    console.log("video için kalan bakiye ->mb", user_remind.song.download)
+                    console.log("song için kalan bakiye ->mb", user_remind.video.download)
+                } else {
+                    console.log("Paket süresi geçerli değil");
+                }
+
+            } else {
+                // Eğer paket sahibi kendisi değilse, pakete alt kullanıcı olarak eklenmişse yapılacak işlemler buraya eklenebilir
+                console.log("Paket sahibi başka bir kullanıcı.");
+            }
+        } catch (err) {
+            console.error("Bir hata oluştu:", err.message);
+        }
+    }
+
+    return user_remind;
+}
+async function calculateUserTotalStreamLimit(userAccount, userid) {
+    const user_remind = {
+        song: {
+            stream: 0,
+        },
+        video: {
+            stream: 0,
+        }
+    };
+    // Asenkron işlemler için for...of döngüsü kullanıyoruz
+    for (const package of userAccount.packages) {
+        const packageid = package.packageid;
+
+        try {
+            const package_detail = await getPackageDetail(packageid);
+            console.log("package_detail", package_detail)
+            // Eğer paket sahibi kendisi ise
+            if (package.masteruserid.toString() === userid.toString()) {
+                const isValid = await isvalidityPeriod(package_detail, package.createdAt);
+                if (isValid) {
+                    const songStreamLimit = await convertUnit(package_detail.limit.song.stream, package_detail.limit.song.stream_unit, "mb");
+                    console.log("paketin verdiği toplam song indirme limiti ->mb", songDownloadLimit)
+                    const videoStreamLimit = await convertUnit(package_detail.limit.video.stream, package_detail.limit.video.stream_unit, "mb");
+                    console.log("paketin verdiği toplam video indirme limiti ->mb", videoDownloadLimit)
+                    const totalusage = await calculateTotalDownloadSize(packageid, "mb");
+                    console.log("paketin pakete ait song için toplam indirme kullanımı ->mb", totalusage.song)
+                    console.log("paketin pakete ait video için toplam indirme kullanımı ->mb", totalusage.video)
+                    if (totalusage.length != 0) {
+                        user_remind.song.download += calculateReminding(songDownloadLimit, totalusage.song);
+                        user_remind.video.download += calculateReminding(videoDownloadLimit, totalusage.video);
+                    } else {
+                        user_remind.song.download += songDownloadLimit;
+                        user_remind.video.download += videoDownloadLimit;
+                    }
+                    console.log("video için kalan bakiye ->mb", user_remind.song.download)
+                    console.log("song için kalan bakiye ->mb", user_remind.video.download)
+                } else {
+                    console.log("Paket süresi geçerli değil");
+                }
+
+            } else {
+                // Eğer paket sahibi kendisi değilse, pakete alt kullanıcı olarak eklenmişse yapılacak işlemler buraya eklenebilir
+                console.log("Paket sahibi başka bir kullanıcı.");
+            }
+        } catch (err) {
+            console.error("Bir hata oluştu:", err.message);
+        }
+    }
+
+    return user_remind;
+}
 async function getPackageDetail(packageid) {
     const package = await PackageModel.findOne({ _id: packageid })
     return package
@@ -96,7 +210,7 @@ async function getPackageDetail(packageid) {
 }
 async function calculateTotalUploadSize(packageid, unit) {
     try {
-        const result = await UploadUsageModel.aggregate([
+        const result = await UploadUsage.aggregate([
             {
                 $match: { packageid: packageid } // Pakete göre filtreleme
             },
@@ -127,7 +241,71 @@ async function calculateTotalUploadSize(packageid, unit) {
         throw err; // Hata yakalanıp Promise zincirine hata olarak fırlatılıyor
     }
 }
+async function calculateTotalDownloadSize(packageid, unit) {
+    try {
+        const result = await DownloadUsage.aggregate([
+            {
+                $match: { packageid: packageid } // Pakete göre filtreleme
+            },
+            {
+                $group: {
+                    _id: "$download_type",
+                    totals: { $sum: "$download_size" } // totalsize değerlerini toplama
+                }
+            }
+        ]);
+
+        console.log('paket idsine göre toplam şarkı ve video download kullanımları :', result);
+        let totalDownloads = { song: 0, video: 0 };
+
+        // Asenkron işlemleri döngüyle işleyelim
+        for (const value of result) {
+            if (value._id === SONG) {
+                totalDownloads.song = await convertUnit(value.totals, "kb", unit);
+            } else if (value._id === VIDEO) {
+                totalDownloads.video = await convertUnit(value.totals, "kb", unit);
+            }
+        }
+        return totalDownloads; // Promise olarak sonuç döndürülüyor
+
+    } catch (err) {
+        console.error('Toplam yükleme boyutu hesaplanırken hata:', err);
+        throw err; // Hata yakalanıp Promise zincirine hata olarak fırlatılıyor
+    }
+}
+async function calculateTotalStreamSize(packageid, unit) {
+    try {
+        const result = await DownloadUsage.aggregate([
+            {
+                $match: { packageid: packageid } // Pakete göre filtreleme
+            },
+            {
+                $group: {
+                    _id: "$download_type",
+                    totals: { $sum: "$download_size" } // totalsize değerlerini toplama
+                }
+            }
+        ]);
+
+        console.log('paket idsine göre toplam şarkı ve video download kullanımları :', result);
+        let totalDownloads = { song: 0, video: 0 };
+
+        // Asenkron işlemleri döngüyle işleyelim
+        for (const value of result) {
+            if (value._id === SONG) {
+                totalDownloads.song = await convertUnit(value.totals, "kb", unit);
+            } else if (value._id === VIDEO) {
+                totalDownloads.video = await convertUnit(value.totals, "kb", unit);
+            }
+        }
+        return totalDownloads; // Promise olarak sonuç döndürülüyor
+
+    } catch (err) {
+        console.error('Toplam yükleme boyutu hesaplanırken hata:', err);
+        throw err; // Hata yakalanıp Promise zincirine hata olarak fırlatılıyor
+    }
+}
 const calculateReminding = (limit, usage) => {
     return limit - usage
 }
-module.exports = { calculateUploadBalancing, selectedSongPackage }
+module.exports = { calculateUploadBalancing, calculateDownloadBalancing, selectedSongPackage }

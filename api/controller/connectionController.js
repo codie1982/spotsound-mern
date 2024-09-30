@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
-const ConnectionModel = require("../models/connectionModel");
+const ConnectionModel = require("../models/sessionModel");
 const jwt = require("jsonwebtoken");
 var geoip = require('geoip-lite');
 const preparedata = require("../config/preparedata")

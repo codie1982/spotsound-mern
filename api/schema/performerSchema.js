@@ -7,7 +7,6 @@ const performerSchema = new mongoose.Schema({
   birthdate: { type: Date, default: new Date() },
   gender: { type: String },
   country: { type: String },
-  profileImage: { type: imageSchema, default: () => ({}) },  // Varsayılan değer olarak boş bir obje döner,
   genres: [{ type: mongoose.Schema.Types.ObjectId }],
   addedby: { type: mongoose.Schema.Types.ObjectId, default: null },
   socialLinks: {
@@ -18,6 +17,8 @@ const performerSchema = new mongoose.Schema({
   songs: [
     { songid: { type: mongoose.Schema.Types.ObjectId } }
   ],
+  performer_delete: { type: Boolean, default: false },
+  performer_active: { type: Boolean, default: true },
 }, { timestamps: true });
 
 module.exports = performerSchema;

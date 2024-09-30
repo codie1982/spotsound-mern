@@ -16,7 +16,7 @@ const getSong = asyncHandler(async (req, res) => {
     return res.status(404).json(ApiResponse.error(404, "Song not found"));
   }
 
-  res.status(200).json(ApiResponse.success(song, 200, "Song retrieved successfully"));
+  res.status(200).json(ApiResponse.success(200, "Song retrieved successfully", song));
 });
 
 // Yeni şarkı oluşturma işlemi
@@ -74,4 +74,5 @@ module.exports = {
   createSong,
   updateSong,
   deleteSong,
+  getSongs,
 };

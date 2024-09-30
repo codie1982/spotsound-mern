@@ -18,6 +18,8 @@ const packageSchema = new mongoose.Schema({
       maxfileupload: { type: Number, min: 0, default: 20 },
       maxfileDownload: { type: Number, min: 0, default: 20 },
       unit: { type: String, enum: ["b", "kb", "mb", "gb"], default: "mb" },
+      stream: { type: Number, min: 0, default: 10 },
+      stream_unit: { type: String, enum: ["b", "kb", "mb", "gb"], default: "gb" },
     },
     video: {
       download: { type: Number, min: 0, default: 1024 },
@@ -25,7 +27,10 @@ const packageSchema = new mongoose.Schema({
       maxfileupload: { type: Number, min: 0, default: 100 },
       maxfileDownload: { type: Number, min: 0, default: 100 },
       unit: { type: String, enum: ["b", "kb", "mb", "gb"], default: "mb" },
+      stream: { type: Number, min: 0, default: 50 },
+      stream_unit: { type: String, enum: ["b", "kb", "mb", "gb"], default: "gb" },
     },
+    maxDevices: { type: Number, },
   },
   duration: {
     unlimited: { type: Boolean, default: true },

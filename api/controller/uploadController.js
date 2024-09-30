@@ -2,6 +2,7 @@
 const asyncHandler = require("express-async-handler");
 const aws = require("../config/aws")
 const { Upload } = require('@aws-sdk/lib-storage'); // Upload sınıfını buradan içe aktarın
+const Images = require("../models/imagesModel")
 const { v4: uuidv4 } = require('uuid');
 const ApiResponse = require("../helpers/response")
 const allowedSongsMimeTypes = require("../helpers/mimes/songmimes")
@@ -56,7 +57,6 @@ const upload = asyncHandler(async (req, res) => {
 
     const uploadPromises = uploadedFiles.map(async (file) => {
       // Dosya türü kontrolü
-      let uploadid = uuidv4();
       console.log("Bakiye  ->", balance)
       // { song: { upload: 512 }, video: { upload: -20 } }
       fileType = getFileType(file.mimetype)
@@ -71,20 +71,6 @@ const upload = asyncHandler(async (req, res) => {
           return { name: file.name, error: 'Bu şarkıları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
         }
         totalUploadSongFileSize += file.size;
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = SONG
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
       } else if (fileType == VIDEO) {
         if (balance.video.upload <= 0) {
           return { name: file.name, error: 'Bu video dosyası için yeterli bakiyen bulunmamaktadır.', success: false };
@@ -93,20 +79,6 @@ const upload = asyncHandler(async (req, res) => {
         if (convertUnit(file.size, "b", "mb") > balance.video.upload) {
           return { name: file.name, error: 'videoları yüklemek için yeterli bakiyen bulunmamaktadır.', success: false };
         }
-        const uploadUsage = new UploadUsageModel()
-        uploadUsage.userid = userid
-        uploadUsage.packageid = selectedPackage.packageid
-        uploadUsage.upload_type = VIDEO
-        uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
-        await uploadUsage.save(
-          (err, result) => {
-            if (err) {
-              console.log("uploadUsage err", err)
-            } else {
-              console.log("uploadUsage result", result)
-            }
-          }
-        )
       } else if (fileType == IMAGE) {
         totalUploadImageFileSize += file.size;
       } else {
@@ -131,39 +103,69 @@ const upload = asyncHandler(async (req, res) => {
           console.log(`Yükleme ilerlemesi (${file.name}): ${progress.loaded} / ${progress.total}`);
           _progress = progress.loaded
         });
-
         const data = await parallelUploads3.done();
-        console.log("Yükleme tamamlandı", data)
-
+        let uploadid = uuidv4();
         const uploadDoc = new UploadModel({
           userid: userid,
-          uploadid,
+          uploadid: uploadid.toString(),
           upload_type: fileType,
           upload_size: await convertUnit(file.size, "b", "kb"), // kb olarak saklanır
+          upload_unit: "kb", // kb olarak saklanır
           data: data,
           success: true,
         });
-
         await uploadDoc.save(
           (err, result) => {
             if (err) {
               console.log("uploadDoc err", err)
             } else {
-              console.log("uploadDoc result", result)
+              //console.log("uploadDoc result", result)
             }
           }
         );
-
+        if (fileType == SONG || fileType == VIDEO) {
+          const uploadUsage = new UploadUsageModel()
+          uploadUsage.userid = userid
+          uploadUsage.packageid = selectedPackage.packageid
+          uploadUsage.upload_type = fileType
+          uploadUsage.upload_size = await convertUnit(file.size, "b", "kb") // burayı kb olarak saklamamız gerekli
+          await uploadUsage.save(
+            (err, result) => {
+              if (err) {
+                console.log("uploadUsage err", err)
+              } else {
+                console.log("uploadUsage result", result)
+              }
+            }
+          )
+        } else if (fileType == IMAGE) {
+          convertUnit
+          const uploadImage = new Images({
+            userid: userid,
+            path: data.Location,
+            uploadid
+          })
+          await uploadImage.save(
+            (err, result) => {
+              if (err) {
+                console.log("uploadImage err", err)
+              } else {
+                console.log("uploadImage result", result)
+              }
+            }
+          )
+        }
 
         return { url: data.Location, uploadid, name: file.name, size: file.size, success: true, objectKey, folder: folderPath };
       } catch (err) {
 
-
+        let uploadid = uuidv4();
         const uploadDoc = new UploadModel({
           userid: userid,
           uploadid,
           upload_type: fileType,
           upload_size: await convertUnit(file.size, "b", "kb"), // kb olarak saklanır
+          upload_unit: "kb", // kb olarak saklanır
           data: null,
           error: err,
           success: false,
@@ -174,7 +176,7 @@ const upload = asyncHandler(async (req, res) => {
             if (err) {
               console.log("uploadDoc err", err)
             } else {
-              console.log("uploadDoc result", result)
+              //console.log("uploadDoc result", result)
             }
           }
         );

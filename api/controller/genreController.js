@@ -4,13 +4,15 @@ const Genre = require("../models/genreModel");
 const ApiResponse = require("../helpers/response")
 // Tüm genre'ları getirme işlemi
 const getGenres = asyncHandler(async (req, res) => {
-  const genres = await Genre.find();
+  const genres = await Genre.find().populate("image");;
   res.status(200).json(ApiResponse.success(genres, 200, "Genres retrieved successfully"));
 });
 
 // Tek bir genre getirme işlemi
 const getGenre = asyncHandler(async (req, res) => {
-  const genre = await Genre.findById(req.params.id);
+  let genreid = req.query.genreid
+  const genre = await Genre.findById(genreid)
+    .populate("image");
 
   if (!genre) {
     return res.status(404).json(ApiResponse.error(404, "Genre not found"));
@@ -28,7 +30,7 @@ const createGenre = asyncHandler(async (req, res) => {
     image
   });
 
-  res.status(201).json(ApiResponse.success(genre, 201, "Genre created successfully"));
+  res.status(201).json(ApiResponse.success(201, "Genre created successfully", genre));
 });
 
 // Genre güncelleme işlemi
