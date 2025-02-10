@@ -43,6 +43,7 @@ export default function Home() {
     }
     dispatch(resetAuth())
   }, [googleAuth, navigate, dispatch])
+
   useEffect(() => {
     if (isLogin) {
       setUsername(user.name)
@@ -55,7 +56,6 @@ export default function Home() {
   }
   return (
     <>
-
       <Row>
         <Col>
           <section id="hero" className="min-vh-100 d-flex aling-items-center text-center">

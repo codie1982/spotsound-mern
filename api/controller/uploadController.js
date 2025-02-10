@@ -139,7 +139,7 @@ const upload = asyncHandler(async (req, res) => {
             }
           )
         } else if (fileType == IMAGE) {
-          convertUnit
+
           const uploadImage = new Images({
             userid: userid,
             path: data.Location,

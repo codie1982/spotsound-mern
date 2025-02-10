@@ -15,6 +15,7 @@ route.post("/google", registerWithGoogle)
 route.get("/oauth", googleOAuth)
 
 route.post("/logout", protect, logout)
+
 route.post("/logout/all", protect, alllogout)
 
 route.post("/me", protect, getMe)
